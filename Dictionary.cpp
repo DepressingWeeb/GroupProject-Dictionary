@@ -1,15 +1,26 @@
-#include <iostream>
+﻿#include <iostream>
 #include <conio.h>
 #include <random>
 #include <chrono>
 #include <Windows.h>
 #include "MyDictionary.h"
+#define MAX_INPUT_LENGTH 255
 using namespace std;
+void inputString(string& input) {
+	wchar_t wstr[MAX_INPUT_LENGTH];
+	char mb_str[MAX_INPUT_LENGTH * 3 + 1];
+
+	unsigned long read;
+	void* con = GetStdHandle(STD_INPUT_HANDLE);
+
+	ReadConsole(con, wstr, MAX_INPUT_LENGTH, &read, NULL);
+
+	int size = WideCharToMultiByte(CP_UTF8, 0, wstr, read, mb_str, sizeof(mb_str), NULL, NULL);
+	mb_str[size-2] = 0;
+	input = mb_str;
+}
+
 void run() {
-	//TODO:Fix bugs
-	//Description:
-	//Currently cannot cin UTF-8 string (Windows-only problem)
-	//->functions cannot work properly for input using Vietnamese characters 
 	MyDictionary myDictionary;
 	const string text = "---------------------------------------------------------DICTIONARY OPERATION----------------------------------------------\n1.\tInit dictionary from datasets.\n2.\tSearch for a keyword. \n3.\tSearch for a definition.\n4.\tAdd a new word and its definition.\n5.\tEdit the definition of an existing word.\n6.\tRemove a word from the dictionary.\n7.\tReset the dictionary to its original state.\n8.\tView a random word and its definition.\n9.\tView the history of searched words.\n-------------------------------------------------------------------QUIZ----------------------------------------------------------------\n10.\tMake random a word with four definitions, and guess its meaning.\n11.\tProvide a random definition with four keywords, and choose the correct word.\n-----------------------------------------------------------------FAVORITE-------------------------------------------------------------\n12.\tAdd a word to favorite list.\n13.\tRemove a word from favorite list.\n14.\tDisplay favorite list.\n-----------------------------------------------------------------I/O FILE-------------------------------------------------------------\n15.\tInit data structure from file\n16.\tSave data structure to file\n--------------------------------------------------------------------QUIT----------------------------------------------------------------\n17.\tQuit program\n\n\n";
 	int input;
@@ -38,8 +49,12 @@ void run() {
 			break;
 		case 2:
 			cout << "Type the word to search for:";
-			getline(cin, input2);
+			inputString(input2);
+			//input3 = u8"kỹ nữ";
+			//cout << input2 << " " << input3 << endl;
+			//cout << input3.size() << " " << input2.size();
 			rep = myDictionary.searchDefinition(input2);
+			
 			cout << "The definition of the word is:" << endl;
 			for (int i = 1; i <= rep.size();i++) {
 				cout << "Definition " << i << " : " << rep[i - 1]<<endl;
@@ -47,7 +62,8 @@ void run() {
 			break;
 		case 3:
 			cout << "Type the definition to search for:";
-			getline(cin, input2);
+			inputString(input2);
+			cout << input2 <<" "<<input2.size()<< endl;
 			rep5 = myDictionary.searchWords(input2, 10);
 			cout << "The 3 most matched words are:" << endl;
 			for (int i = 1; i <= rep5.size(); i++) {
@@ -56,24 +72,24 @@ void run() {
 			break;
 		case 4:
 			cout << "Type the word to insert:";
-			getline(cin, input2);
+			inputString(input2);
 			cout << "Type the definition to insert:\n";
-			getline(cin, input3);
+			inputString(input3);
 			myDictionary.insertWord(input2, input3);
 			break;
 		case 5:
 			cout << "Type the word to change definition:";
-			getline(cin, input2);
+			inputString(input2);
 			cout << "Type the ith definition to change:";
 			cin >> input4;
 			cout << "Type the new definition to change to:";
 			cin.ignore(256, '\n');
-			getline(cin, input3);
+			inputString(input3);
 			myDictionary.changeDefinition(input4, input2, input3);
 			break;
 		case 6:
 			cout << "Type the word to remove from dictionary:";
-			getline(cin, input2);
+			inputString(input2);
 			myDictionary.deleteWord(input2);
 			break;
 		case 7:
@@ -134,12 +150,12 @@ void run() {
 			break;
 		case 12:
 			cout << "Type the word to add to the favorite list:";
-			cin >> input2;
+			inputString(input2);
 			myDictionary.addFavorite(input2);
 			break;
 		case 13:
 			cout << "Type the word to remove from the favorite list:";
-			cin >> input2;
+			inputString(input2);
 			myDictionary.removeFavorite(input2);
 			break;
 		case 14:
@@ -161,6 +177,6 @@ void run() {
 }
 int main() {
 	SetConsoleOutputCP(CP_UTF8);
-	setvbuf(stdout, nullptr, _IOFBF, 1000);
+	setvbuf(stdout, nullptr, _IONBF, 0);
 	run();
 }

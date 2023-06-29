@@ -3,6 +3,8 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <locale>
+#include <codecvt>
 MyDictionary::MyDictionary() {
 	dictSize = 0;
 }
@@ -25,7 +27,6 @@ MyDictionary::MyDictionary(const string path,int option) {
 	else {
 		//TODO:Complete the option 15 : input from saved data structures
 		//Must have every data members (trie,dictsize,favoriteWord,history) be set
-
 	}
 }
 
