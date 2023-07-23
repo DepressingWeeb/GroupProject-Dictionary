@@ -1,9 +1,9 @@
 #include "MyTrie.h"
 #include <iostream>
 #include <random>
-#include <chrono>
+#include <chrono> //to use default_random_generator
 #include <sstream>
-#include <utility>
+#include <utility> //to use std::pair
 
 bool cmp(pair<string, int>p1, pair<string, int> p2) {
 	return p1.second > p2.second;
@@ -25,7 +25,7 @@ Trie::Trie() {
 }
 
 Trie::~Trie() {
-	//TODO:Complete the function
+	//TODO:
 	//Function desciption:
 	//Free the space allocated for the trie
 }
@@ -36,9 +36,42 @@ TrieNode* Trie::childNodeContainsChar(TrieNode* parentNode,string character) {
 	}
 	return nullptr;
 }
+
+vector<vector<string>> Trie::getOperationsDone() {
+	vector<vector<string>> ans = operationsDone;
+	operationsDone.clear();
+	return ans;
+}
+
+TrieNode* Trie::getNodeWord(string word) {
+	TrieNode* curr = root;
+	string ch = "";
+	for (int i = 0; i < word.size(); i++) {
+		ch = word[i];
+		TrieNode* next = childNodeContainsChar(curr, ch);
+		if (next == nullptr) {
+			return nullptr;
+		}
+		curr = next;
+	}
+	return curr;
+}
+
+void Trie::getNChildUnderneath(TrieNode* curr, int n, vector<string>& childs,string currWord) {
+	
+	if (childs.size() == n) return;
+	if (!curr) return;
+	if (curr->definitions.size() > 0) childs.push_back(currWord);
+	for (int i = 0; i < curr->childrens.size(); i++) {
+		
+		if (!curr->childrens[i]) continue;
+		cout << currWord << " " << currWord + curr->childrens[i]->character << endl;
+		getNChildUnderneath(curr->childrens[i], n, childs, currWord + curr->childrens[i]->character);
+	}
+}
 bool Trie::insertWord(string word, string definition) {
 	//Function desciption:
-	// insert a word into trie
+	//Insert a word into trie
 	//Return true if word already presented in trie,else false
 	bool ans = true;
 	TrieNode* curr = root;
@@ -55,15 +88,20 @@ bool Trie::insertWord(string word, string definition) {
 		v.push_back(curr);
 		curr = next;
 	}
+	if (curr->definitions.size() == 0) ans = false;
 	curr->definitions.push_back(definition);
 	v.push_back(curr);
 	if (!ans) {
 		for (TrieNode* node : v) node->childWordCount++;
+		operationsDone.push_back({ "insert_word",word });
+	}
+	else {
+		operationsDone.push_back({ "insert_def",word,definition,to_string(curr->definitions.size())});
 	}
 	return ans;
 }
 
-int Trie::deleteWord(TrieNode*&curr,string word) {
+int Trie::deleteWord(TrieNode*&curr,string word,TrieNode* parent) {
 	//Function desciption:
 	//Delete the word and all of its definition in the trie 
 	//1:true
@@ -78,10 +116,15 @@ int Trie::deleteWord(TrieNode*&curr,string word) {
 			return -1;
 		}
 		else {
-			if (deleteWord(next, word.substr(1))==1 && curr->definitions.size() == 0 && curr->childrens.size() == 1) {
-				curr->childrens.clear();
-				delete curr;
-				curr = nullptr;
+			if (deleteWord(next, word.substr(1),curr)==1 && curr->definitions.size() == 0 && curr->childrens.size() == 1) {
+				if (!parent) return 1; //Do not delete the root
+				for (TrieNode*& t : parent->childrens) {
+					if (curr == t) {
+						t->childrens.clear();
+						delete t;
+						t = nullptr;
+					}
+				}
 				return 1;
 			}
 			else {
@@ -91,9 +134,16 @@ int Trie::deleteWord(TrieNode*&curr,string word) {
 		}
 	}
 	else if(word.size()==0 && curr->definitions.size()>0) {
+		for (int i = curr->definitions.size()-1; i >=0; i--) {
+			operationsDone.push_back({ "delete_def",word,curr->definitions[i],to_string(i+1)});
+		}
 		if (curr->childrens.size() == 0) {
-			delete curr;
-			curr = nullptr;
+			for (TrieNode*& t : parent->childrens) {
+				if (curr == t) {
+					delete t;
+					t = nullptr;
+				}
+			}
 			return 1;
 		}
 		else {
@@ -105,7 +155,7 @@ int Trie::deleteWord(TrieNode*&curr,string word) {
 }
 
 void Trie::getWords(TrieNode* curr,string currWord, int nWord,vector<pair<string,int>>& ans,vector<string>& definition) {
-	//TODO:Implement sort() function and Pair structure in utils.cpp and utils.h because the project doesn't allow pair and sort in std library 
+	//TODO:Implement sort() function in utils.cpp and utils.h because the project doesn't allow sort in std library 
 	// Function description:
 	//Return nWord words whose definition have the highest matching percentage to the input definition
 	currWord += curr->character;
@@ -119,6 +169,7 @@ void Trie::getWords(TrieNode* curr,string currWord, int nWord,vector<pair<string
 			if (ans.size() < nWord) {
 				ans.push_back(make_pair(currWord, match));
 				if (ans.size() == nWord) sort(ans.begin(), ans.end(), cmp);
+				break;
 			}
 			else {
 				if (match > ans[ans.size() - 1].second) {
@@ -157,6 +208,25 @@ vector<string> Trie::getDefinitions(string word) {
 	return curr->definitions;
 }
 
+void Trie::insertDefinition(int nthDefinition, string word, string definition) {
+	// Function description:
+	//Insert to the nth definition of the word input (a word may or maynot has several definitions).
+	//If the nthDefinition is not in the range of the vector size or the word is not found,change nothing.
+	//When using this, note that the word must be already in the Trie.
+	TrieNode* curr = root;
+	string ch = "";
+	for (int i = 0; i < word.size(); i++) {
+		ch = word[i];
+		TrieNode* next = childNodeContainsChar(curr, ch);
+		if (next == nullptr) {
+			return;
+		}
+		curr = next;
+	}
+	
+	curr->definitions.insert(curr->definitions.begin() + (nthDefinition - 1),definition);
+}
+
 void Trie::changeDefinition(int nthDefinition,string word,string definition) {
 	// Function description:
 	//Change the nth definition of the word input (a word may or maynot has several definitions).
@@ -172,7 +242,29 @@ void Trie::changeDefinition(int nthDefinition,string word,string definition) {
 		curr = next;
 	}
 	if (nthDefinition >= 1 && nthDefinition <= curr->definitions.size()) {
+		string prevDefinition = curr->definitions[nthDefinition - 1];
 		curr->definitions[nthDefinition - 1] = definition;
+		operationsDone.push_back({ "change_def",word,prevDefinition,definition,to_string(nthDefinition) });
+	}
+}
+
+void Trie::deleteDefinition(int nthDefinition, string word) {
+	// Function description:
+	//Delete the nth definition of the word input (a word may or maynot has several definitions).
+	//If the nthDefinition is not in the range of the vector size or the word is not found,change nothing.
+	TrieNode* curr = root;
+	string ch = "";
+	for (int i = 0; i < word.size(); i++) {
+		ch = word[i];
+		TrieNode* next = childNodeContainsChar(curr, ch);
+		if (next == nullptr) {
+			return;
+		}
+		curr = next;
+	}
+	if (nthDefinition >= 1 && nthDefinition <= curr->definitions.size()) {
+		operationsDone.push_back({ "delete_def",word,curr->definitions[nthDefinition-1],to_string(nthDefinition)});
+		curr->definitions.erase(curr->definitions.begin() + nthDefinition-1);
 	}
 }
 
