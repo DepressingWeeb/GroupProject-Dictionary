@@ -26,58 +26,6 @@ void searchDefinition(MyDictionary& myDictionary, vector<string>&wordSearched,st
     for (auto p : ans) if(p.first!="")  wordSearched.push_back(p.first);
     doneSearch = true;
 }
-
-void simpleConversionToVietnameseVNI(string& word) {
-    vector<string>utfChar = { u8"á", u8"à", u8"ả", u8"ã", u8"ạ",u8"â",u8"ấ", u8"ầ", u8"ẩ", u8"ẫ", u8"ậ",u8"ă",u8"ắ", u8"ằ", u8"ẳ", u8"ẵ", u8"ặ", u8"í", u8"ì", u8"ỉ", u8"ĩ", u8"ị",u8"ú", u8"ù", u8"ủ", u8"ũ", u8"ụ",u8"ư",u8"ứ", u8"ừ", u8"ử", u8"ữ", u8"ự",u8"é", u8"è", u8"ẻ", u8"ẽ", u8"ẹ",u8"ê",u8"ế", u8"ề", u8"ể", u8"ễ", u8"ệ",u8"ó", u8"ò", u8"ỏ", u8"õ", u8"ọ",u8"ô",u8"ố", u8"ồ", u8"ổ", u8"ỗ", u8"ộ",u8"ơ",u8"ớ", u8"ờ", u8"ở", u8"ỡ", u8"ợ",u8"ý",u8"ỳ", u8"ỷ", u8"ỹ", u8"ỵ", u8"đ" };
-    vector<string> base = { "a","a","a","a","a","a",u8"â",u8"â", u8"â",u8"â", u8"â","a",u8"ă",u8"ă", u8"ă", u8"ă", u8"ă","i","i", "i", "i", "i","u","u", "u", "u", "u", "u",u8"ư",u8"ư", u8"ư", u8"ư",u8"ư","e","e", "e", "e", "e", "e", u8"ê",u8"ê", u8"ê", u8"ê", u8"ê", "o","o", "o", "o", "o", "o", u8"ô",u8"ô", u8"ô", u8"ô", u8"ô","o",u8"ơ",u8"ơ", u8"ơ", u8"ơ", u8"ơ","y","y", "y", "y","y","d" };
-    vector<string> num = { "1","2","3","4","5","6","1","2","3","4","5","8","1","2","3","4","5", "1","2","3","4","5", "1","2","3","4","5","7","1","2","3","4","5", "1","2","3","4","5", "6","1","2","3","4","5", "1","2","3","4","5", "6","1","2","3","4","5", "7","1","2","3","4","5","1","2","3","4","5","9" };
-    char lastChar = word[word.size() - 1];
-    if (lastChar >= 49 && lastChar <= 57) {
-        string lastLetter(1, word[word.size() - 2]);
-        string last2Letter = word.size() > 2 ? word.substr(word.size() - 3, 2) : "";
-        for (int i = 0; i < utfChar.size(); i++) {
-            if (lastLetter == base[i] && num[i][0] == lastChar) {
-
-                string newChar = utfChar[i];
-                word.pop_back();
-                word.pop_back();
-                word += newChar;
-                break;
-            }
-            else if (last2Letter == base[i] && num[i][0] == lastChar) {
-                string newChar = utfChar[i];
-                word.pop_back();
-                word.pop_back();
-                word.pop_back();
-                word += newChar;
-                break;
-            }
-        }
-    }
-}
-
-int TextEditCallBack(ImGuiInputTextCallbackData* data) {
-    
-    string word = data->Buf;
-    if (word.size() > 1) {
-        simpleConversionToVietnameseVNI(word);
-        memcpy(data->Buf, word.c_str(), word.size() + 1);
-        data->BufTextLen = word.size();
-        data->BufDirty = true;
-        data->CursorPos = word.size();
-        
-    }
-    return 0;
-}
-void inputStringVietnameseVNI(const char* label, const char* hint,const char* popupLabel,string& word) {
-    ImGui::InputTextWithHint(label, hint, &word, ImGuiInputTextFlags_CallbackAlways, TextEditCallBack);
-    
-}
-void inputStringMultilineVietnameseVNI(const char* label, ImVec2 size, const char* popupLabel, string& word) {
-    ImGui::InputTextMultiline(label, &word,size, ImGuiInputTextFlags_CallbackAlways, TextEditCallBack);
-}
-
-
 // Main code
 int runGUI()
 {
@@ -231,7 +179,7 @@ int runGUI()
                 isDefinitionEditing = -1;
                 openInsertWindow = false;
             }
-            inputStringVietnameseVNI("##Search word", "Type the word here","Word input",word);
+            ImGui::InputTextWithHint("##Search word", "Type the word here",&word,ImGuiInputTextFlags_EnterReturnsTrue);
             
             ImGui::SameLine();
             if (ImGui::Button(ICON_FA_MAGNIFYING_GLASS" Search Word")) {
@@ -244,7 +192,7 @@ int runGUI()
                 }
                 
             }
-            inputStringVietnameseVNI("##Search definition", "Type the definition here", "Definition input",definition);
+            ImGui::InputTextWithHint("##Search definition", "Type the definition here",&definition, ImGuiInputTextFlags_EnterReturnsTrue);
             ImGui::SameLine();
             if (ImGui::Button(ICON_FA_MAGNIFYING_GLASS" Search Definition")) {
                 doneSearch = false;
@@ -380,11 +328,11 @@ int runGUI()
             static string wordInsert = "";
             static vector<string> definitionsInsert = { "" };
             ImGui::Begin("Insert Word", &openInsertWindow);
-            inputStringVietnameseVNI("Insert word", "Type the word to be inserted...", "Vietnamese input", wordInsert);
+            ImGui::InputTextWithHint("Insert word", "Type the word to be inserted...", &wordInsert,ImGuiInputTextFlags_EnterReturnsTrue);
             for (int i = 0; i < definitionsInsert.size(); i++) {
                 string label = "Definition " + to_string(i);
                 string popupLabel = "Vietmanese input " + to_string(i);
-                inputStringMultilineVietnameseVNI(label.c_str(), { 300,50 }, popupLabel.c_str(), definitionsInsert[i]);
+                ImGui::InputTextMultiline(label.c_str(), &definitionsInsert[i],{ 300,50 },ImGuiInputTextFlags_EnterReturnsTrue);
             }
             if (ImGui::Button(ICON_FA_SQUARE_PLUS" Add Definition ")) {
                 definitionsInsert.push_back("");
