@@ -125,7 +125,7 @@ void MyDictionary::toFile() {
 	//TODO
 	//Function description:
 	//Save the current Dictionary to file (must ensure that each time the saved file has unique name )
-	//Recommend: using time since epoch (time(0)) to make a different name for each file
+	//Recommend: using time since epoch (time(0)) or date and time format to make a different name for each file
 }
 
 void MyDictionary::resetDictionary() {
