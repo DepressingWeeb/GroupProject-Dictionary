@@ -105,6 +105,7 @@ int runGUI()
     ImFont* font2 = io.Fonts->AddFontFromFileTTF("CODE2000.TTF", 40.0f, nullptr, ranges.Data);
     ImFont* icon2 = io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, 40.0f * 2.0f / 3.0f, &config, ranges_icon.Data);
     ImFont* emoticon_font2 = io.Fonts->AddFontFromFileTTF("CODE2000.TTF", 40.0f * 2.0f / 3.0f, &mergeConfig, ranges_emoticon.Data);
+    ImFont* font3 = io.Fonts->AddFontFromFileTTF("Quantico-Bold.ttf", 24.0f, nullptr, io.Fonts->GetGlyphRangesDefault());
     
     io.Fonts->Build();
     bool quit = false;
@@ -285,7 +286,9 @@ int runGUI()
                 ImGui::PopFont();
                 ImGui::Separator();
                 for (int i = 0; i < definitionsToDisplay.size(); i++) {
+                    ImGui::PushFont(font3);
                     ImGui::Text("Definition #%d", i + 1);
+                    ImGui::PopFont();
                    ImGui::SameLine();
                    string iconLabel = ICON_FA_PEN_TO_SQUARE + (string)"##" + to_string(i);
                    string iconDeleteLabel = ICON_FA_CIRCLE_XMARK + (string)"##" + to_string(i);
