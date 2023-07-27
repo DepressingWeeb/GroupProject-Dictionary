@@ -20,7 +20,8 @@ private:
 	TrieNode* childNodeContainsChar(TrieNode* parentNode,string character);
 public:
 	Trie();//default constructor
-	~Trie();//Destructor
+	//~Trie();//Destructor
+	void freeTrie(TrieNode* root);
 	TrieNode*& getRoot() { return root; }
 	vector<vector<string>> getOperationsDone();
 	TrieNode* getNodeWord(string word);

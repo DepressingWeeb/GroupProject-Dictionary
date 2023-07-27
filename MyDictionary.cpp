@@ -172,3 +172,9 @@ void MyDictionary::resetDictionary() {
 	trie.getOperationsDone();
 	return;
 }
+
+void MyDictionary::freeDictionary() {
+	trie.getOperationsDone();
+	trie.freeTrie(trie.getRoot());
+	cout << "Executed" << endl;
+}
