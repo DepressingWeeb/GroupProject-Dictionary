@@ -2,6 +2,8 @@
 #include "DictionaryGUI.h"
 #include <stdio.h>
 #include <SDL.h>
+#include <SDL_ttf.h>
+#include <SDL_image.h>
 #include <string>
 #include <vector>
 #include "MyDictionary.h"
@@ -10,12 +12,48 @@
 #include <thread>
 #include <fstream>
 #include <iostream>
+#include <random>
 using namespace std;
 #if !SDL_VERSION_ATLEAST(2,0,17)
 #error This backend requires SDL 2.0.17+ because of SDL_RenderGeometry() function
 #endif
-
+SDL_Rect* createRect(SDL_Rect* rect, int x, int y, int w, int h) {
+    rect->x = x;
+    rect->y = y;
+    rect->w = w;
+    rect->h = h;
+    return rect;
+}
+SDL_Texture* loadImgTexture(SDL_Renderer* renderer,string path) {
+    SDL_Texture* newTexture = NULL;
+    newTexture = IMG_LoadTexture(renderer, path.c_str());
+    return newTexture;
+}
+void createButton(SDL_Renderer* renderer,SDL_Texture* buttonSpriteSheet, SDL_Rect* button, SDL_Rect* buttonOnHover, bool leftMouseDown, int x, int y, int w, int h, void(*func)(), double degree) {
+    int mouseX, mouseY;
+    SDL_Rect buttonRect;
+    SDL_GetMouseState(&mouseX, &mouseY);
+    if (x < mouseX && mouseX < x + w && y < mouseY && mouseY < y + h) {
+        if (leftMouseDown && func != NULL) func();
+        if (degree == -1)
+            SDL_RenderCopy(renderer, buttonSpriteSheet, buttonOnHover, createRect(&buttonRect, x, y, w, h));
+        else
+            SDL_RenderCopyEx(renderer, buttonSpriteSheet, buttonOnHover, createRect(&buttonRect, x, y, w, h), degree, NULL, SDL_FLIP_NONE);
+    }
+    else {
+        SDL_RenderCopy(renderer, buttonSpriteSheet, button, createRect(&buttonRect, x, y, w, h));
+    }
+}
+void createText(SDL_Renderer* renderer,TTF_Font* font, SDL_Color color, string text, int x, int y, int w, int h) {
+    SDL_Surface* textSurface = TTF_RenderText_Blended(font, text.c_str(), color);
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, textSurface);
+    SDL_FreeSurface(textSurface);
+    SDL_Rect rect;
+    SDL_RenderCopy(renderer, texture, NULL, createRect(&rect, x, y, w, h));
+    SDL_DestroyTexture(texture);
+}
 void initDictionary(MyDictionary& myDictionary,string PATH, atomic<bool>& done) {
+    myDictionary.freeDictionary();
     myDictionary = MyDictionary(PATH, 1);
     done = true;
 }
@@ -26,6 +64,90 @@ void searchDefinition(MyDictionary& myDictionary, vector<string>&wordSearched,st
     for (auto p : ans) if(p.first!="")  wordSearched.push_back(p.first);
     doneSearch = true;
 }
+vector<string> getRandomWordAndDefinitionWithDiff(int diff, MyDictionary& myDictionary) {
+    int minn = 2 + (diff - 1) * 3;
+    int maxx = 2 + diff * 3;
+    while (true) {
+        vector<string> wordWithDef = myDictionary.getRandomWordAndDefinition();
+        if (wordWithDef[0].size() >= minn && wordWithDef[0].size() <= maxx) return wordWithDef;
+    }
+}
+vector<vector<string>> generateQuiz(int typeOne, int typeTwo, int diff,MyDictionary& myDictionary) {
+    vector<vector<string>> ans;
+    for (int i = 0; i < typeOne; i++) {
+        vector<string>rep = getRandomWordAndDefinitionWithDiff(diff,myDictionary);
+        vector<string>rep2 = getRandomWordAndDefinitionWithDiff(diff, myDictionary);
+        vector<string>rep3 = getRandomWordAndDefinitionWithDiff(diff, myDictionary);
+        vector<string>rep4 = getRandomWordAndDefinitionWithDiff(diff, myDictionary);
+        vector<vector<string>>v = { rep,rep2,rep3,rep4 };
+        shuffle(v.begin(), v.end(), default_random_engine(time(0)));
+        int randomInt = rand() % 4;
+        string word = v[randomInt][0];
+        ans.push_back({ "1",word,v[0][1],v[1][1],v[2][1],v[3][1],to_string(randomInt)});
+    }
+    for (int i = 0; i < typeTwo; i++) {
+        vector<string>rep = getRandomWordAndDefinitionWithDiff(diff, myDictionary);
+        vector<string>rep2 = getRandomWordAndDefinitionWithDiff(diff, myDictionary);
+        vector<string>rep3 = getRandomWordAndDefinitionWithDiff(diff, myDictionary);
+        vector<string>rep4 = getRandomWordAndDefinitionWithDiff(diff, myDictionary);
+        vector<vector<string>>v = { rep,rep2,rep3,rep4 };
+        shuffle(v.begin(), v.end(), default_random_engine(time(0)));
+        int randomInt = rand() % 4;
+        string def = v[randomInt][1];
+        ans.push_back({ "2",def,v[0][0],v[1][0],v[2][0],v[3][0],to_string(randomInt)});
+    }
+    for (auto ve : ans) {
+        for (auto s : ve) {
+            cout << s << " ";
+        }
+        cout << endl;
+    }
+    return ans;
+}
+
+
+void displayQuiz(SDL_Renderer* renderer,SDL_Window* window,int typeOne, int typeTwo) {
+    SDL_Texture* bg = loadImgTexture(renderer, "/resources/bg/bg.png");
+    SDL_Texture* buttons = loadImgTexture(renderer, "/resources/button/buttons.png");
+    SDL_Texture* questionBox = loadImgTexture(renderer, "/resources/quiz/Question.png");
+    SDL_Texture* normalAns = loadImgTexture(renderer, "/resources/quiz/normal.png");
+    SDL_Texture* correctAns = loadImgTexture(renderer, "/resources/quiz/correct.png");
+    SDL_Texture* wrongAns = loadImgTexture(renderer, "/resources/quiz/wrong.png");
+    SDL_Texture* timeDisplay = loadImgTexture(renderer, "/resources/quiz/time.png");
+    SDL_Texture* S = loadImgTexture(renderer, "/resources/performance/S.png");
+    SDL_Texture* A = loadImgTexture(renderer, "/resources/performance/A.png");
+    SDL_Texture* B = loadImgTexture(renderer, "/resources/performance/B.png");
+    SDL_Texture* C = loadImgTexture(renderer, "/resources/performance/C.png");
+    SDL_Texture* D = loadImgTexture(renderer, "/resources/performance/D.png");
+    SDL_Texture* ceritified= loadImgTexture(renderer, "/resources/performance/certified.png");
+    SDL_Texture* perfomanceScreen= loadImgTexture(renderer, "/resources/performance/perf.png");
+    SDL_Rect SCREEN = { 0,0,1280,720 };
+    bool quit = false;
+    SDL_Event e;
+    ImGui::Render();
+    SDL_SetRenderDrawColor(renderer, 0,0,0,0);
+    SDL_RenderClear(renderer);
+    ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
+    SDL_RenderPresent(renderer);
+    while (!quit) {
+        SDL_RenderCopy(renderer, bg, nullptr, &SCREEN);
+        if (SDL_PollEvent(&e)) {
+            switch (e.type) {
+            case SDL_QUIT:
+                SDL_DestroyWindow(window);
+                SDL_DestroyRenderer(renderer);
+                TTF_Quit();
+                IMG_Quit();
+                SDL_Quit();
+                exit(0);
+            }
+        }
+
+    }
+
+}
+
+
 // Main code
 int runGUI()
 {
@@ -85,6 +207,7 @@ int runGUI()
     iconBuilder.AddText(ICON_FA_BOOK);
     iconBuilder.AddText(ICON_FA_FLOPPY_DISK);
     iconBuilder.AddText(ICON_FA_LEFT_LONG);
+    iconBuilder.AddText(ICON_FA_BOOK_OPEN_READER);
     iconBuilder.BuildRanges(&ranges_icon);
     //end icon font build
     ImFontConfig config,mergeConfig;
@@ -126,6 +249,12 @@ int runGUI()
     vector<string> definitionsToDisplay;
     int isDefinitionEditing = -1;
     bool openInsertWindow = false;
+    bool openQuizSettingWindow = false;
+    bool isDoingQuiz = false;
+    int typeOneQuiz = 25;
+    int typeTwoQuiz = 25;
+    int diff = 1;
+    vector<vector<string>> quizzes;
     while (!quit)
     {
         SDL_Event event;
@@ -142,11 +271,7 @@ int runGUI()
         ImGui_ImplSDLRenderer_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
-
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()!
-        //if (show_demo_window)
-            //ImGui::ShowDemoWindow(&show_demo_window);
-
+        //if(!isDoingQuiz)
         {
             ImGui::SetNextWindowSize({ 550,720 }, ImGuiCond_Once);
             ImGui::SetNextWindowPos({ 0,0 }, ImGuiCond_Once);
@@ -179,6 +304,10 @@ int runGUI()
                 definitionsToDisplay.clear();
                 isDefinitionEditing = -1;
                 openInsertWindow = false;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button(ICON_FA_BOOK_OPEN_READER" Create Quiz")) {
+                openQuizSettingWindow = true;
             }
             ImGui::InputTextWithHint("##Search word", "Type the word here",&word,ImGuiInputTextFlags_EnterReturnsTrue);
             
@@ -248,9 +377,10 @@ int runGUI()
             initDict.join();
             selectedDict = -1;
         }
-        ImGui::SetNextWindowSize({ 725,720 }, ImGuiCond_Once);
-        ImGui::SetNextWindowPos({ 551,0 }, ImGuiCond_Once);
+        //if(!isDoingQuiz)
         {
+            ImGui::SetNextWindowSize({ 725,720 }, ImGuiCond_Once);
+            ImGui::SetNextWindowPos({ 551,0 }, ImGuiCond_Once);
             ImGui::Begin("Display Definition", nullptr,ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove);
             if (definitionsToDisplay.size() != 0) {
                 ImGui::PushFont(font2);
@@ -313,7 +443,7 @@ int runGUI()
                         }
                         ImGui::TextWrapped(definitionsToDisplay[i].c_str());
                     }
-                    
+                    ImGui::Text("");
                 
                 }
                 if (ImGui::Button(ICON_FA_PLUS" Add Definition")) {
@@ -356,6 +486,73 @@ int runGUI()
             ImGui::End();
 
         }
+        if (openQuizSettingWindow) {
+            ImGui::Begin("Quiz Creation");
+            ImGui::SliderInt("##1", &typeOneQuiz, 0, 50);
+            ImGui::Text("Number of type 1 questions");
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 20);
+            ImGui::SliderInt("##2", &typeTwoQuiz, 0, 50);
+            ImGui::Text("Number of type 2 questions");
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 20);
+            ImGui::SliderInt("##3", &diff, 1, 5);
+            ImGui::Text("Difficulty");
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 20);
+            if (ImGui::Button("Cancel")) {
+                openQuizSettingWindow = false;
+            }
+            ImGui::SameLine();
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 200);
+            if (ImGui::Button("Enter Quiz")) {
+                openQuizSettingWindow = false;
+                isDoingQuiz = true;
+                quizzes= generateQuiz(typeOneQuiz, typeTwoQuiz, diff, myDictionary);
+            }
+            ImGui::End();
+        }
+        if (isDoingQuiz) {
+            
+            static int currQuiz = 0;
+            static int userAns = -1;
+            ImGui::SetNextWindowSize({ 700,400 });
+            ImGui::Begin("Quiz", &isDoingQuiz);
+            string question = to_string(currQuiz + 1) + " . " + "What is the " + (quizzes[currQuiz][0] == "1" ? "definition " : "word ") + "for the " + (quizzes[currQuiz][0] == "1" ? "word " : "definition \n") + quizzes[currQuiz][1];
+            ImGui::TextWrapped(question.c_str());
+            for (int i = 1; i <= 4; i++) {
+                string ans = to_string(i) + " . " + quizzes[currQuiz][i+1];
+                ImGui::TextWrapped(ans.c_str());
+            }
+            if (ImGui::Button("1"))
+                userAns = 0;
+            ImGui::SameLine();
+            if (ImGui::Button("2"))
+                userAns = 1;
+            ImGui::SameLine();
+            if (ImGui::Button("3"))
+                userAns = 2;
+            ImGui::SameLine();
+            if (ImGui::Button("4"))
+                userAns = 3;
+            if (userAns != -1) {
+                if (to_string(userAns) == quizzes[currQuiz][6]) {
+                    ImGui::TextColored({ 0,200,0,255 }, "CORRECT");
+                }
+                else {
+                    ImGui::TextColored({ 200,0,0,255 }, "WRONG");
+                }
+                if (ImGui::Button("Next")) {
+                    userAns = -1;
+                    currQuiz++;
+                    if (currQuiz == quizzes.size()) {
+                        currQuiz = 0;
+                        isDoingQuiz = false;
+                    }
+                }
+            }
+            ImGui::End();
+
+        }
+        //if (show_demo_window)
+            //ImGui::ShowDemoWindow(&show_demo_window);
         // Rendering
         ImGui::Render();
         SDL_RenderSetScale(renderer, io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);

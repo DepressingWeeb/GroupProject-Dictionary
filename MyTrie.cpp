@@ -23,11 +23,11 @@ TrieNode::TrieNode(string character, string definition) {
 Trie::Trie() {
 	this->root = new TrieNode();
 }
-
-Trie::~Trie() {
-	//TODO:
-	//Function desciption:
-	//Free the space allocated for the trie
+void Trie::freeTrie(TrieNode* root) {
+	for (TrieNode* child : root->childrens) {
+		freeTrie(child);
+	}
+	delete root;
 }
 TrieNode* Trie::childNodeContainsChar(TrieNode* parentNode,string character) {
 	if (!parentNode) return nullptr;

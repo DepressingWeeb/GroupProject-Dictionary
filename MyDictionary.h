@@ -30,4 +30,5 @@ public:
 	vector<string> getHistory();
 	void toFile();
 	void resetDictionary();
+	void freeDictionary();
 };
