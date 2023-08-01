@@ -2,8 +2,6 @@
 #include "DictionaryGUI.h"
 #include <stdio.h>
 #include <SDL.h>
-#include <SDL_ttf.h>
-#include <SDL_image.h>
 #include <string>
 #include <vector>
 #include "MyDictionary.h"
@@ -13,45 +11,12 @@
 #include <fstream>
 #include <iostream>
 #include <random>
+#include <chrono>
 using namespace std;
+using namespace std::chrono;
 #if !SDL_VERSION_ATLEAST(2,0,17)
 #error This backend requires SDL 2.0.17+ because of SDL_RenderGeometry() function
 #endif
-SDL_Rect* createRect(SDL_Rect* rect, int x, int y, int w, int h) {
-    rect->x = x;
-    rect->y = y;
-    rect->w = w;
-    rect->h = h;
-    return rect;
-}
-SDL_Texture* loadImgTexture(SDL_Renderer* renderer,string path) {
-    SDL_Texture* newTexture = NULL;
-    newTexture = IMG_LoadTexture(renderer, path.c_str());
-    return newTexture;
-}
-void createButton(SDL_Renderer* renderer,SDL_Texture* buttonSpriteSheet, SDL_Rect* button, SDL_Rect* buttonOnHover, bool leftMouseDown, int x, int y, int w, int h, void(*func)(), double degree) {
-    int mouseX, mouseY;
-    SDL_Rect buttonRect;
-    SDL_GetMouseState(&mouseX, &mouseY);
-    if (x < mouseX && mouseX < x + w && y < mouseY && mouseY < y + h) {
-        if (leftMouseDown && func != NULL) func();
-        if (degree == -1)
-            SDL_RenderCopy(renderer, buttonSpriteSheet, buttonOnHover, createRect(&buttonRect, x, y, w, h));
-        else
-            SDL_RenderCopyEx(renderer, buttonSpriteSheet, buttonOnHover, createRect(&buttonRect, x, y, w, h), degree, NULL, SDL_FLIP_NONE);
-    }
-    else {
-        SDL_RenderCopy(renderer, buttonSpriteSheet, button, createRect(&buttonRect, x, y, w, h));
-    }
-}
-void createText(SDL_Renderer* renderer,TTF_Font* font, SDL_Color color, string text, int x, int y, int w, int h) {
-    SDL_Surface* textSurface = TTF_RenderText_Blended(font, text.c_str(), color);
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, textSurface);
-    SDL_FreeSurface(textSurface);
-    SDL_Rect rect;
-    SDL_RenderCopy(renderer, texture, NULL, createRect(&rect, x, y, w, h));
-    SDL_DestroyTexture(texture);
-}
 void initDictionary(MyDictionary& myDictionary,string PATH, atomic<bool>& done) {
     myDictionary.freeDictionary();
     myDictionary = MyDictionary(PATH, 1);
@@ -63,6 +28,13 @@ void searchDefinition(MyDictionary& myDictionary, vector<string>&wordSearched,st
     wordSearched.clear();
     for (auto p : ans) if(p.first!="")  wordSearched.push_back(p.first);
     doneSearch = true;
+}
+string getTime(Uint32 totalSeconds) {
+    string minutes = to_string(totalSeconds / 60);
+    string seconds = to_string(totalSeconds % 60);
+    if (minutes.size() == 1) minutes = "0" + minutes;
+    if (seconds.size() == 1) seconds = "0" + seconds;
+    return minutes + ":" + seconds;
 }
 vector<string> getRandomWordAndDefinitionWithDiff(int diff, MyDictionary& myDictionary) {
     int minn = 2 + (diff - 1) * 3;
@@ -104,49 +76,6 @@ vector<vector<string>> generateQuiz(int typeOne, int typeTwo, int diff,MyDiction
     }
     return ans;
 }
-
-
-void displayQuiz(SDL_Renderer* renderer,SDL_Window* window,int typeOne, int typeTwo) {
-    SDL_Texture* bg = loadImgTexture(renderer, "/resources/bg/bg.png");
-    SDL_Texture* buttons = loadImgTexture(renderer, "/resources/button/buttons.png");
-    SDL_Texture* questionBox = loadImgTexture(renderer, "/resources/quiz/Question.png");
-    SDL_Texture* normalAns = loadImgTexture(renderer, "/resources/quiz/normal.png");
-    SDL_Texture* correctAns = loadImgTexture(renderer, "/resources/quiz/correct.png");
-    SDL_Texture* wrongAns = loadImgTexture(renderer, "/resources/quiz/wrong.png");
-    SDL_Texture* timeDisplay = loadImgTexture(renderer, "/resources/quiz/time.png");
-    SDL_Texture* S = loadImgTexture(renderer, "/resources/performance/S.png");
-    SDL_Texture* A = loadImgTexture(renderer, "/resources/performance/A.png");
-    SDL_Texture* B = loadImgTexture(renderer, "/resources/performance/B.png");
-    SDL_Texture* C = loadImgTexture(renderer, "/resources/performance/C.png");
-    SDL_Texture* D = loadImgTexture(renderer, "/resources/performance/D.png");
-    SDL_Texture* ceritified= loadImgTexture(renderer, "/resources/performance/certified.png");
-    SDL_Texture* perfomanceScreen= loadImgTexture(renderer, "/resources/performance/perf.png");
-    SDL_Rect SCREEN = { 0,0,1280,720 };
-    bool quit = false;
-    SDL_Event e;
-    ImGui::Render();
-    SDL_SetRenderDrawColor(renderer, 0,0,0,0);
-    SDL_RenderClear(renderer);
-    ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
-    SDL_RenderPresent(renderer);
-    while (!quit) {
-        SDL_RenderCopy(renderer, bg, nullptr, &SCREEN);
-        if (SDL_PollEvent(&e)) {
-            switch (e.type) {
-            case SDL_QUIT:
-                SDL_DestroyWindow(window);
-                SDL_DestroyRenderer(renderer);
-                TTF_Quit();
-                IMG_Quit();
-                SDL_Quit();
-                exit(0);
-            }
-        }
-
-    }
-
-}
-
 
 // Main code
 int runGUI()
@@ -208,6 +137,7 @@ int runGUI()
     iconBuilder.AddText(ICON_FA_FLOPPY_DISK);
     iconBuilder.AddText(ICON_FA_LEFT_LONG);
     iconBuilder.AddText(ICON_FA_BOOK_OPEN_READER);
+    iconBuilder.AddText(ICON_FA_GEAR);
     iconBuilder.BuildRanges(&ranges_icon);
     //end icon font build
     ImFontConfig config,mergeConfig;
@@ -229,8 +159,12 @@ int runGUI()
     ImFont* icon2 = io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, 40.0f * 2.0f / 3.0f, &config, ranges_icon.Data);
     ImFont* emoticon_font2 = io.Fonts->AddFontFromFileTTF("CODE2000.TTF", 40.0f * 2.0f / 3.0f, &mergeConfig, ranges_emoticon.Data);
     ImFont* font3 = io.Fonts->AddFontFromFileTTF("Quantico-Bold.ttf", 24.0f, nullptr, io.Fonts->GetGlyphRangesDefault());
+    ImFont* font4 = io.Fonts->AddFontFromFileTTF("E1234.ttf", 36.0f, nullptr, io.Fonts->GetGlyphRangesDefault());
+    ImFont* font5 = io.Fonts->AddFontFromFileTTF("FasterOne-Regular.ttf", 48.0f, nullptr, io.Fonts->GetGlyphRangesDefault());
     
     io.Fonts->Build();
+    ImGuiStyle& style = ImGui::GetStyle();
+    style.TabRounding = 12.0;
     bool quit = false;
     string word;
     string definition;
@@ -250,11 +184,16 @@ int runGUI()
     int isDefinitionEditing = -1;
     bool openInsertWindow = false;
     bool openQuizSettingWindow = false;
+    bool openStyleEditor = false;
     bool isDoingQuiz = false;
     int typeOneQuiz = 25;
     int typeTwoQuiz = 25;
     int diff = 1;
+    int currQuiz = 0;
     vector<vector<string>> quizzes;
+    vector<int>timesInSecond;
+    vector<int>userAns;
+    Uint64 startTime = time(0);
     while (!quit)
     {
         SDL_Event event;
@@ -276,7 +215,6 @@ int runGUI()
             ImGui::SetNextWindowSize({ 550,720 }, ImGuiCond_Once);
             ImGui::SetNextWindowPos({ 0,0 }, ImGuiCond_Once);
             ImGui::Begin("Control",nullptr,ImGuiWindowFlags_NoCollapse|ImGuiWindowFlags_NoMove);
-            
             if(ImGui::Button(ICON_FA_LIST" Init Dictionary"))
                 ImGui::OpenPopup("Directory");
             ImGui::SameLine();
@@ -306,9 +244,14 @@ int runGUI()
                 openInsertWindow = false;
             }
             ImGui::SameLine();
-            if (ImGui::Button(ICON_FA_BOOK_OPEN_READER" Create Quiz")) {
+            if (ImGui::Button(ICON_FA_BOOK_OPEN_READER" Create Quiz")&& myDictionary.getSize() > 5000 ) {
                 openQuizSettingWindow = true;
             }
+            ImGui::SameLine();
+            if (ImGui::Button(ICON_FA_GEAR" Style Editor")) {
+                openStyleEditor = true;
+            }
+            ImGui::Text("");
             ImGui::InputTextWithHint("##Search word", "Type the word here",&word,ImGuiInputTextFlags_EnterReturnsTrue);
             
             ImGui::SameLine();
@@ -377,7 +320,6 @@ int runGUI()
             initDict.join();
             selectedDict = -1;
         }
-        //if(!isDoingQuiz)
         {
             ImGui::SetNextWindowSize({ 725,720 }, ImGuiCond_Once);
             ImGui::SetNextWindowPos({ 551,0 }, ImGuiCond_Once);
@@ -456,6 +398,11 @@ int runGUI()
 
             ImGui::End();
         }
+        if (openStyleEditor) {
+            ImGui::Begin("Style Editor", &openStyleEditor);
+            ImGui::ShowStyleEditor();
+            ImGui::End();
+        }
         if(openInsertWindow)
         {
             static string wordInsert = "";
@@ -506,47 +453,167 @@ int runGUI()
                 openQuizSettingWindow = false;
                 isDoingQuiz = true;
                 quizzes= generateQuiz(typeOneQuiz, typeTwoQuiz, diff, myDictionary);
+                timesInSecond = vector<int>(quizzes.size()+1, 0);
+                userAns = vector<int>(quizzes.size(), -1);
+                startTime = time(0);
+                currQuiz = 0;
             }
             ImGui::End();
         }
         if (isDoingQuiz) {
             
-            static int currQuiz = 0;
-            static int userAns = -1;
-            ImGui::SetNextWindowSize({ 700,400 });
+            
+            ImGui::SetNextWindowSize({ 700,400 },ImGuiCond_FirstUseEver);
             ImGui::Begin("Quiz", &isDoingQuiz);
-            string question = to_string(currQuiz + 1) + " . " + "What is the " + (quizzes[currQuiz][0] == "1" ? "definition " : "word ") + "for the " + (quizzes[currQuiz][0] == "1" ? "word " : "definition \n") + quizzes[currQuiz][1];
-            ImGui::TextWrapped(question.c_str());
-            for (int i = 1; i <= 4; i++) {
-                string ans = to_string(i) + " . " + quizzes[currQuiz][i+1];
-                ImGui::TextWrapped(ans.c_str());
-            }
-            if (ImGui::Button("1"))
-                userAns = 0;
-            ImGui::SameLine();
-            if (ImGui::Button("2"))
-                userAns = 1;
-            ImGui::SameLine();
-            if (ImGui::Button("3"))
-                userAns = 2;
-            ImGui::SameLine();
-            if (ImGui::Button("4"))
-                userAns = 3;
-            if (userAns != -1) {
-                if (to_string(userAns) == quizzes[currQuiz][6]) {
-                    ImGui::TextColored({ 0,200,0,255 }, "CORRECT");
-                }
-                else {
-                    ImGui::TextColored({ 200,0,0,255 }, "WRONG");
-                }
-                if (ImGui::Button("Next")) {
-                    userAns = -1;
-                    currQuiz++;
-                    if (currQuiz == quizzes.size()) {
-                        currQuiz = 0;
-                        isDoingQuiz = false;
+            if (currQuiz < quizzes.size()) {
+                ImGui::PushFont(font4);
+                ImVec2 pos = ImGui::GetWindowPos();
+                ImDrawList* draw_list = ImGui::GetWindowDrawList();
+                draw_list->AddCircleFilled({ pos[0]+ImGui::GetWindowWidth() / 2,pos[1]+8}, 85, ImGui::GetColorU32(IM_COL32(59, 102, 219, 255)), 40);
+                ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 36.0 * 1.8);
+                ImGui::TextWrapped(getTime(time(0) - startTime).c_str());
+                ImGui::PopFont();
+                ImGui::Text("");
+                string question = "Question "+to_string(currQuiz + 1) + " : " + "What is the " + (quizzes[currQuiz][0] == "1" ? "definition " : "word ") + "for the " + (quizzes[currQuiz][0] == "1" ? "word " : "definition \n") + quizzes[currQuiz][1];
+                ImGui::TextWrapped(question.c_str());
+                for (int i = 1; i <= 4; i++) {
+                    string ans = to_string(i) + " . " + quizzes[currQuiz][i + 1];
+                    if (userAns[currQuiz] != -1) {
+                        if (to_string(i - 1) == quizzes[currQuiz][6]) {
+                            ImGui::PushStyleColor(ImGuiCol_Text, { 0,0.9f,0,1.0f });
+                            ImGui::TextWrapped(ans.c_str());
+                            ImGui::PopStyleColor();
+                        }
+                        else if (i - 1 == userAns[currQuiz]) {
+                            ImGui::PushStyleColor(ImGuiCol_Text, { 0.9f,0,0,1.0f });
+                            ImGui::TextWrapped(ans.c_str());
+                            ImGui::PopStyleColor();
+                        }
+                        else {
+                            ImGui::TextWrapped(ans.c_str());
+                        }
+                    }
+                    else {
+                        ImGui::TextWrapped(ans.c_str());
                     }
                 }
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, style.FrameRounding+30.0f);
+                ImGui::PushFont(font2);
+                ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.0 - 80 * 2);
+                if (ImGui::Button("1",{60,60}))
+                    userAns[currQuiz] = 0;
+                ImGui::SameLine();
+                if (ImGui::Button("2",{60,60}))
+                    userAns[currQuiz] = 1;
+                ImGui::SameLine();
+                if (ImGui::Button("3",{60,60}))
+                    userAns[currQuiz] = 2;
+                ImGui::SameLine();
+                if (ImGui::Button("4",{60,60}))
+                    userAns[currQuiz] = 3;
+                ImGui::PopStyleVar();
+                ImGui::PopFont();
+                if (userAns[currQuiz] != -1) {
+                    if (to_string(userAns[currQuiz]) == quizzes[currQuiz][6]) {
+                        ImGui::TextColored({ 0,200,0,255 }, "CORRECT");
+                    }
+                    else {
+                        ImGui::TextColored({ 200,0,0,255 }, "WRONG");
+                    }
+                    if (ImGui::Button("Next")) {
+                        timesInSecond[currQuiz] = time(0) - startTime;
+                        startTime = time(0);
+                        currQuiz++;
+                    }
+                    if (currQuiz > 0 && ImGui::Button("Prev")) {
+                        timesInSecond[currQuiz] = time(0) - startTime;
+                        startTime = time(0) - timesInSecond[currQuiz - 1];
+                        currQuiz--;
+                    }
+                }
+            }
+            else {
+                ImDrawList* draw_list = ImGui::GetWindowDrawList();
+                ImVec2 wSize = ImGui::GetWindowSize();
+                ImVec2 wPos = ImGui::GetWindowPos();
+                ImU32 col_a = ImGui::GetColorU32(IM_COL32(129, 240, 223, 255));
+                ImU32 col_b = ImGui::GetColorU32(IM_COL32(104, 184, 204, 255));
+                draw_list->AddRectFilledMultiColor(wPos, {wSize[0]+wPos[0],wSize[1]+wPos[1]}, col_a, col_b, col_b, col_a);
+                if (timesInSecond[timesInSecond.size() - 1] == 0) {
+                    int summ = 0;
+                    for (int val : timesInSecond) summ += val;
+                    timesInSecond[timesInSecond.size() - 1] = summ;
+                }
+                int correct = 0;
+                for (int i = 0; i < quizzes.size(); i++) {
+                    if (to_string(userAns[i]) == quizzes[i][6])
+                        correct++;
+                }
+                ImGui::SetCursorPosY(100);
+                ImGui::SetCursorPosX(200);
+                ImGui::Text("︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿");
+                ImGui::PushFont(font2);
+                ImGui::SetCursorPosX(200);
+                ImGui::Text("Time taken   : %s", getTime(timesInSecond[timesInSecond.size() - 1]).c_str());
+                ImGui::SetCursorPosX(200);
+                ImGui::Text("Correct        : %d/%d",correct,quizzes.size());
+                ImGui::SetCursorPosX(200);
+                ImGui::Text("Performance :");
+                ImGui::SameLine();
+                ImGui::PopFont();
+                ImGui::PushFont(font5);
+                float percentage = (float)correct / (float)quizzes.size();
+                int goodTime = 10 * quizzes.size();
+                int standardTime = 20 * quizzes.size();
+                const float arr[8] = { 0,0.5f,0.75f,0.9f,1.0f,1.01f };
+                const string ranks[5] = {"D","C","B","A","S"};
+                const ImVec4 colors[5] = {
+                    {0,0,0,0.58f},
+                    {0.08f,0.68f,0.36,1},
+                    {0.3f,0.54f,0.89f,1},
+                    {1,0.78f,0.004f,1},
+                    {0.95f,0.3f,0.12f,1}
+                };
+                string rank;
+                ImVec4 color;
+                string bonus = "";
+                for (int i = 0; i < 5; i++) {
+                    if (percentage >= arr[i] && percentage < arr[i + 1]) {
+                        rank = ranks[i];
+                        color = colors[i];
+                        break;
+                    }
+                }
+                if (timesInSecond[timesInSecond.size() - 1] <= goodTime)
+                    bonus="+";
+                else if (timesInSecond[timesInSecond.size() - 1] <= standardTime) {}
+                else bonus= "-";
+                //cout << bonus << endl;
+                ImGui::TextColored(color, rank.c_str());
+                ImGui::PopFont();
+                ImGui::SameLine();
+                ImGui::PushFont(font2);
+                ImVec2 curPos = ImGui::GetCursorPos();
+                ImGui::SetCursorPos({ curPos[0]-8 ,curPos[1]-5});
+                ImGui::TextColored(color, bonus.c_str());
+                ImGui::PopFont();
+                ImGui::SetCursorPosX(200);
+                ImGui::Text("︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿︵‿");
+                ImGui::Text("");
+                ImGui::PushFont(font3);
+                ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(0.53f, 0.03f, 0.94f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor(0.43f, 0.13f, 0.94f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor(0.38f, 0.23f, 0.94f));
+                ImGui::PushStyleColor(ImGuiCol_Text, (ImVec4)ImColor(1.0f, 1.0f,1.0f));
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, style.FrameRounding + 10.0f);
+
+                if (ImGui::Button("<-- Back to Dictionary")) {
+                    currQuiz = 0;
+                    isDoingQuiz = false;
+                }
+                ImGui::PopFont();
+                ImGui::PopStyleColor(4);
+                ImGui::PopStyleVar();
             }
             ImGui::End();
 
