@@ -63,6 +63,9 @@
     <ClCompile Include="imgui\imgui_widgets.cpp">
       <Filter>Source Files\imgui</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\Admin\Downloads\01_hello_SDL\01_hello_SDL\01_hello_SDL.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyTrie.h">
