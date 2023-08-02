@@ -365,3 +365,5 @@ FodyWeavers.xsd
 #My .gitignore
 *.vcxproj
 *.vcxproj.filters
+/Dictionary.vcxproj
+/Dictionary.vcxproj.filters
