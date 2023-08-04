@@ -2,9 +2,9 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <algorithm>
 #include <locale>
 #include <codecvt>
+#include "utils.h"
 MyDictionary::MyDictionary() {
 	dictSize = 0;
 }
@@ -22,7 +22,7 @@ MyDictionary::MyDictionary(const string path,int option) {
 			while (getline(s, word, ',')) {
 				row.push_back(word);
 			}
-			replace(row[3].begin(), row[3].end(), '|', '\n');
+			replace(row[3], '|', '\n');
 			if (!trie.insertWord(row[0], row[3])) dictSize++;
 		}
 		trie.getOperationsDone();
@@ -44,14 +44,13 @@ vector<string> MyDictionary::searchDefinition(string word) {
 vector<pair<string,int>> MyDictionary::searchWords(string definition, int nWord) {
 	//Function desciption:
 	//Return nWord words that have the highest match with the input definition
-	replace_if(definition.begin(), definition.end(), [](char ch) {return (ch == ',' || ch == '.' || ch == ';' || ch == ':' || ch == '\''); }, ' ');
+	replace_if(definition, ",.;:'/",' ');
 	vector<string> words;
 	stringstream ss(definition);
 	string word;
 	while (ss >> word) 
 		if(word.size()>2)	
 			words.push_back(word);
-	sort(words.begin(), words.end());
 	vector<pair<string,int>> ans;
 	string currWord = "";
 	trie.getWords(trie.getRoot(), currWord, nWord, ans, words);
@@ -93,8 +92,8 @@ void MyDictionary::addFavorite(string word) {
 }
 
 void MyDictionary::removeFavorite(string word) {
-	vector<string>::iterator it = find(favoriteWords.begin(), favoriteWords.end(),word);
-	if (it != favoriteWords.end()) favoriteWords.erase(it);
+	int idxFound = find(favoriteWords,word);
+	if (idxFound != -1) favoriteWords.erase(favoriteWords.begin()+idxFound);
 }
 
 void MyDictionary::printFavorite() {
@@ -153,13 +152,11 @@ void MyDictionary::resetDictionary() {
 				insertWord(operation[1], operation[2]);
 			else {
 				if (node->definitions.size() >= stoi(operation[3]) - 1) {
-					cout << node->definitions.size() << " " << operation[3] << endl;
 					insertDefinition(stoi(operation[3]), operation[1], operation[2]);
 				}
 				else {
 					for (int i = operationsDone.size() - 1; i > -1; i--) {
 						if (operationsDone[i][0] == "delete_def" && operationsDone[i][1] == operation[1] && node->definitions.size() >= stoi(operationsDone[i][3]) - 1) {
-							cout << node->definitions.size() << " " << operationsDone[i][3] << endl;
 							insertDefinition(stoi(operationsDone[i][3]), operation[1], operationsDone[i][2]);
 							operationsDone.erase(operationsDone.begin() + i);
 							break;

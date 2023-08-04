@@ -12,6 +12,7 @@
 #include <iostream>
 #include <random>
 #include <chrono>
+#include "utils.h"
 using namespace std;
 using namespace std::chrono;
 #if !SDL_VERSION_ATLEAST(2,0,17)
@@ -86,7 +87,6 @@ int runGUI()
         printf("Error: %s\n", SDL_GetError());
         return -1;
     }
-
     SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
 
     // Create window with SDL_Renderer graphics context
@@ -120,7 +120,7 @@ int runGUI()
     ImVector<ImWchar> ranges;
     ImVector<ImWchar> ranges_emoticon;
     ImVector<ImWchar> ranges_icon;
-    ImFontGlyphRangesBuilder builder,emoticonBuilder,iconBuilder;
+    ImFontGlyphRangesBuilder builder,emoticonBuilder,iconBuilder,emojiBuilder;
     builder.AddRanges(io.Fonts->GetGlyphRangesDefault()); // Add one of the default ranges
     builder.AddRanges(io.Fonts->GetGlyphRangesVietnamese());
     builder.BuildRanges(&ranges);
@@ -161,7 +161,6 @@ int runGUI()
     ImFont* font3 = io.Fonts->AddFontFromFileTTF("Quantico-Bold.ttf", 24.0f, nullptr, io.Fonts->GetGlyphRangesDefault());
     ImFont* font4 = io.Fonts->AddFontFromFileTTF("E1234.ttf", 36.0f, nullptr, io.Fonts->GetGlyphRangesDefault());
     ImFont* font5 = io.Fonts->AddFontFromFileTTF("FasterOne-Regular.ttf", 48.0f, nullptr, io.Fonts->GetGlyphRangesDefault());
-    
     io.Fonts->Build();
     ImGuiStyle& style = ImGui::GetStyle();
     style.TabRounding = 12.0;
@@ -237,7 +236,7 @@ int runGUI()
             ImGui::SameLine();
             if (ImGui::Button(ICON_FA_CLOCK_ROTATE_LEFT" Reset Dictionary")) {
                 myDictionary.resetDictionary();
-                wordSearched.clear();
+                wordSearched.clear(); 
                 wordToDisplayDefinition = "";
                 definitionsToDisplay.clear();
                 isDefinitionEditing = -1;
@@ -251,7 +250,6 @@ int runGUI()
             if (ImGui::Button(ICON_FA_GEAR" Style Editor")) {
                 openStyleEditor = true;
             }
-            ImGui::Text("");
             ImGui::InputTextWithHint("##Search word", "Type the word here",&word,ImGuiInputTextFlags_EnterReturnsTrue);
             
             ImGui::SameLine();
@@ -334,8 +332,9 @@ int runGUI()
                 if (ImGui::Button(ICON_FA_CIRCLE_XMARK)) {
                     myDictionary.deleteWord(wordToDisplayDefinition);
                     myDictionary.removeFavorite(wordToDisplayDefinition);
-                    if(find(wordSearched.begin(), wordSearched.end(), wordToDisplayDefinition)!=wordSearched.end())
-                        wordSearched.erase(find(wordSearched.begin(),wordSearched.end(),wordToDisplayDefinition));
+                    int idxFound = find(wordSearched, wordToDisplayDefinition);
+                    if (idxFound != -1)
+                        wordSearched.erase(wordSearched.begin() + idxFound);
                     wordToDisplayDefinition = "";
                     definitionsToDisplay.clear();
 

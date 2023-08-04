@@ -4,10 +4,7 @@
 #include <chrono> //to use default_random_generator
 #include <sstream>
 #include <utility> //to use std::pair
-
-bool cmp(pair<string, int>p1, pair<string, int> p2) {
-	return p1.second > p2.second;
-}
+#include "utils.h"
 
 TrieNode::TrieNode() {
 	character = "";
@@ -168,14 +165,14 @@ void Trie::getWords(TrieNode* curr,string currWord, int nWord,vector<pair<string
 			}
 			if (ans.size() < nWord) {
 				ans.push_back(make_pair(currWord, match));
-				if (ans.size() == nWord) sort(ans.begin(), ans.end(), cmp);
+				if (ans.size() == nWord) sortByFunc(ans);
 				break;
 			}
 			else {
 				if (match > ans[ans.size() - 1].second) {
 					ans.pop_back();
 					ans.push_back(make_pair(currWord, match));
-					sort(ans.begin(), ans.end(), cmp);
+					sortByFunc(ans);
 					break;
 				}
 			}

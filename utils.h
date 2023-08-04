@@ -11,9 +11,6 @@ using namespace std;
 void replace(string& word, char from, char to);
 int find(vector<string> words, string targetWord);//return index of first target found,if not found return -1
 void replace_if(string& s, string from, char to); //replace the char if char is in string from
-bool cmp1(pair<string, int>p1, pair<string, int> p2) {
-	return p1.second > p2.second;
-}
 void sortByFunc(vector<pair<string,int>>& v);//Sort vector by the cmp function above
 
 

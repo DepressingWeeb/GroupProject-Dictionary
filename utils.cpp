@@ -27,31 +27,31 @@ void replace_if(string& s, string from, char to) {
     }
 }
 
-void Maxheapify(vector<pair<string, int>>& arr, int n, int l) {
-    int a = n;
-    if (2 * n + 1 <= l - 1 && arr[a].second < arr[2 * n + 1].second) {
-        a = 2 * n + 1;
-    }
-    if (2 * n + 2 <= l - 1 && arr[a].second < arr[2 * n + 2].second) {
-        a = 2 * n + 2;
-    }
-    if (a != n) {
-        swap(arr[a], arr[n]);
-        Maxheapify(arr, a, l);
+void heapify(vector<pair<string, int>>& arr, int i, int n) {
+    int smallest = i;
+    int l = 2 * i + 1;
+    int r = 2 * i + 2;
+    if (l < n && arr[l].second < arr[smallest].second)
+        smallest = l;
+    if (r < n && arr[r].second < arr[smallest].second)
+        smallest = r;
+    if (smallest != i) {
+        swap(arr[i], arr[smallest]);
+        heapify(arr, smallest, n);
     }
 }
 
-void buildMaxHeap(vector<pair<string, int>>& arr, int n) {
+void buildHeap(vector<pair<string, int>>& arr, int n) {
     for (int i = n / 2 - 1; i >= 0; i--) {
-        Maxheapify(arr, i, n);
+        heapify(arr, i, n);
     }
 }
 
 void HeapSort(vector<pair<string, int>>& arr, int n) {
-    buildMaxHeap(arr, n);
+    buildHeap(arr, n);
     for (int i = n - 1; i >= 0; i--) {
         swap(arr[0], arr[i]);
-        Maxheapify(arr, 0, i);
+        heapify(arr, 0, i);
     }
 }
 
