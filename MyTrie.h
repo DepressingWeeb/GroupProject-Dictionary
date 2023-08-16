@@ -35,5 +35,5 @@ public:
 	void deleteDefinition(int nthDefinition, string word);
 	vector<string> getRandomWordAndDefinition();
         void serialize(TrieNode* root,ofstream& fout);
-        int deserialize(TrieNode* root,ifstream& fin);
+        int deserialize(TrieNode* &root,ifstream& fin);
 };
