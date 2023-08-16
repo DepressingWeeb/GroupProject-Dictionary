@@ -30,7 +30,43 @@ MyDictionary::MyDictionary(const string path,int option) {
 	else {
 		//TODO:Complete the option 15 : input from saved data structures
 		//Must have every data members (trie,dictsize,favoriteWord,history,operationsDone) be set
+		
+		int check = Trie.deserialize(Trie.getRoot(),fin);
+		if(check)
+		{
+			fin.close();
+			return;
+		}
+		else
+		{
+			dictSize = trie.getRoot()->childWordCount;
+		        int nWord,nOperations;
+		        fin >> nWord;
+		        favoriteWords = vector<string>(nWord);
+		        fin.ignore(256, '\n');
+		        for (int i = 0; i < nWord; i++)
+			     getline(fin, favoriteWords[i]);
+		         fin >> nWord;
+		         searchHistory = vector<string>(nWord);
+		         fin.ignore(256, '\n');
+		         for (int i = 0; i < nWord; i++)
+			     getline(fin, searchHistory[i]);
+		         fin >> nOperations;
+		         vector<vector<string>> operations(nOperations);
+		        fin.ignore(256, '\n');
+		        for (vector<string>& v : operations)
+			{
+			     fin >> nWord;
+			      v = vector<string>(nWord);
+			      fin.ignore(256, '\n');
+			       for (string& w : v)
+				 getline(fin, w);
+		         }
+		        trie.setOperationsDone(operations);
+		}
+	
 	}
+	fin.close();
 }
 
 vector<string> MyDictionary::searchDefinition(string word) {
