@@ -311,3 +311,22 @@ vector<string> Trie::getRandomWordAndDefinition() {
 	}
 	return ans;
 }
+void Trie::serialize(TrieNode* root,ofstream &fout)
+{
+	if(root == nullptr) return ;
+	fout<<root->character<<'\n';
+	fout<<root->childWordCount<<'\n';
+	fout<<root->definitions.size()<<'\n';
+	for(int j = 0;j<root->definitions.size();j++)
+		{
+			string tmp = root->definitions[i];
+			replace(tmp,'\n','|');
+			fout<<tmp<<'\n';
+		}
+	// recursion for its childrens
+	for(int i = 0;i< root->childrens.size();i++)
+		{
+			serialize(root->childrens[i],fout);
+		}
+	fout<<'{}'<<'\n';
+}
