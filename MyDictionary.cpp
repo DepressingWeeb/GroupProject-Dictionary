@@ -161,6 +161,30 @@ void MyDictionary::toFile() {
 	//Function description:
 	//Save the current Dictionary to file (must ensure that each time the saved file has unique name )
 	//Recommend: using time since epoch (time(0)) or date and time format to make a different name for each file
+	struct tm timeT;
+	auto now = std::chrono::system_clock::now();
+	auto localTime = std::chrono::system_clock::to_time_t(now);
+	_localtime64_s(&timeT, &localTime);
+	stringstream ss;
+	ss << put_time(&timeT, "%Y-%m-%d %H.%M.%S") << ".txt";
+	string fileName = ss.str();
+	ofstream fout("SavedDataStructure/"+fileName);
+	trie.serialize(trie.getRoot(), fout);
+	fout << favoriteWords.size() << '\n';
+	for (string w : favoriteWords)
+		fout << w << "\n";
+	fout << searchHistory.size() << '\n';
+	for (string w :searchHistory)
+		fout << w << "\n";
+	vector<vector<string>>operations = trie.getOperationsDone();
+	fout << operations.size() << '\n';
+	for (vector<string>w : operations)
+		{
+		   fout << w.size() << '\n';
+		    for (string w : v)
+			fout << w << '\n';
+	        }
+	fout.close();
 }
 
 void MyDictionary::resetDictionary() {
