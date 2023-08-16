@@ -328,5 +328,47 @@ void Trie::serialize(TrieNode* root,ofstream &fout)
 		{
 			serialize(root->childrens[i],fout);
 		}
-	fout<<'{}'<<'\n';
+	fout<<"{}"<<'\n';
+}
+int Trie::deserialize(TrieNode* &root,ifstream &fin)
+{
+     // Read next item from file. If there are no more items or next
+    // item is marker, then return 1 to indicate same
+	char val;
+	if(!getline(fin,val))
+	{
+		return 1;
+	}
+	if(val == "{}")
+	{
+		return 1;
+	}
+	//else create new node and recursion for its childrens
+	root = new TrieNode();
+	root->character = val;
+	string childwordcount;
+	getline(fin,childwordcount);
+	root->childWordCount = stoi(childwordcount);
+	string size ;
+	getline(fin,size);
+	int n = stoi(size);
+	root->definitions = vector<string>(n);
+	for(int i = 0;i< root->definitions.size())
+		{
+			getline(fin,root->definitions[i]);
+			replace(root->definition[i],'|','\n');
+		}
+	TrieNode* tmp;
+	while(true)
+		{
+			tmp = nullptr;
+			if(deserialize(tmp,fin))
+			{
+				delete tmp;
+				break;
+			}
+			root->childrens.emplace_back(tmp);
+		}
+	return 0 ;
+	
 }
