@@ -53,6 +53,39 @@ TrieNode* Trie::getNodeWord(string word) {
 	}
 	return curr;
 }
+TrieNode* Trie::inputNodeFile(ifstream& in) {
+	string chara;
+	if (!(getline(in,chara))) {
+		return nullptr;
+	}
+	if (chara == MARKER_STRING) {
+		return nullptr;
+	}
+	TrieNode* newNode = new TrieNode();
+	newNode->character = chara;
+	string wordCount;
+	getline(in, wordCount);
+	newNode->childWordCount = stoi(wordCount);
+	string nDef;
+	getline(in, nDef);
+	int n_def = stoi(nDef);
+	newNode->definitions = vector<string>(n_def);
+	for (int i = 0; i < n_def; i++) {
+		getline(in, newNode->definitions[i]);
+		replace(newNode->definitions[i], '|', '\n');
+	}
+	return newNode;
+}
+
+void Trie::outputNodeFile(TrieNode* node, ofstream& out) {
+	out << node->character << '\n';
+	out << node->childWordCount << '\n';
+	out << node->definitions.size() << '\n';
+	for (int i = 0; i < node->definitions.size(); i++) {
+		string temp = node->definitions[i];
+		replace(temp, '\n', '|');
+		out << temp << '\n';
+	}
 
 void Trie::getNChildUnderneath(TrieNode* curr, int n, vector<string>& childs,string currWord) {
 	
