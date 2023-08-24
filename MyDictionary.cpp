@@ -10,7 +10,22 @@ MyDictionary::MyDictionary() {
 }
 MyDictionary::MyDictionary(const string path,int option) {
 	dictSize = 0;
-
+if (option == 1) {
+		ifstream fin;
+		fin.open(path);
+		vector<string> row;
+		string line, word, temp;
+		while (getline(fin, line)) {
+			row.clear();
+			stringstream s(line);
+			while (getline(s, word, ',')) {
+				row.push_back(word);
+			}
+			replace(row[3], '|', '\n');
+			if (!trie.insertWord(row[0], row[3])) dictSize++;
+		}
+		trie.getOperationsDone();
+	}
 	
 	else {
 		//TODO:Complete the option 15 : input from saved data structures
