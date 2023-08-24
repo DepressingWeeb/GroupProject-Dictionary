@@ -18,6 +18,8 @@ private:
 	TrieNode* root;
 	vector<vector<string>>operationsDone;// The operations done that EDIT the dictionary (for functions like reset )
 	TrieNode* childNodeContainsChar(TrieNode* parentNode,string character);
+        TrieNode* inputNodeFile(ifstream& in);
+	void outputNodeFile(TrieNode* node, ofstream& out);
 public:
 	Trie();//default constructor
 	//~Trie();//Destructor
