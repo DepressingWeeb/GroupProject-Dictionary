@@ -58,7 +58,6 @@ MyDictionary::MyDictionary(const string path,int option) {
 				getline(fin, w);
 		}
 		trie.setOperationsDone(operations);
-
 	}
 	fin.close();
 }
@@ -81,10 +80,10 @@ vector<pair<string,int>> MyDictionary::searchWords(string definition, int nWord)
 	while (ss >> word) 
 		if(word.size()>2)	
 			words.emplace_back(word);
-	vector<pair<string,int>> ans;
+	vector<pair<string, int>> res;
 	string currWord = "";
-	trie.getWords(trie.getRoot(), currWord, nWord, ans, words);
-	return ans;
+	trie.getWords(trie.getRoot(), currWord, nWord, res, words);
+	return res;
 }
 
 vector<string> MyDictionary::getNWordsUnderneath(string word,int n) {
@@ -194,7 +193,8 @@ void MyDictionary::resetDictionary() {
 	//Function description:
 	//Reset dict to initial condition ( delete inserted words, insert deleted words, change back edited definitions etc.)
 	operationsDone = trie.getOperationsDone();
-	trie.setOperationsDone(vector<vector<string>>());
+	vector<vector<string>> v;
+	trie.setOperationsDone(v);
 	favoriteWords.clear();
 	searchHistory.clear();
 	while (operationsDone.size()) {
