@@ -54,7 +54,3 @@ void HeapSort(vector<pair<string, int>>& arr, int n) {
         heapify(arr, 0, i);
     }
 }
-
-void sortByFunc(vector<pair<string, int>>& v) {
-    HeapSort(v, v.size());
-}
