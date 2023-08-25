@@ -70,7 +70,7 @@ void Trie::outputNodeFile(TrieNode* node, ofstream& out) {
 }
 
 void Trie::serialize(TrieNode* root, ofstream& out){
-	if (root == nullptr) return;
+	if (!root) return;
 	// Else, store current node and recur for its children
 	outputNodeFile(root, out);
 	for (int i = 0; i < root->childrens.size(); i++)
@@ -115,7 +115,7 @@ TrieNode* Trie::getNodeWord(string word) {
 	for (int i = 0; i < word.size(); i++) {
 		ch = word[i];
 		TrieNode* next = childNodeContainsChar(curr, ch);
-		if (next == nullptr) {
+		if (!next) {
 			return nullptr;
 		}
 		cur = next;
@@ -125,9 +125,8 @@ TrieNode* Trie::getNodeWord(string word) {
 
 void Trie::getNChildUnderneath(TrieNode* curr, int n, vector<string>& childs,string currWord) {
 	
-	if (childs.size() == n) return;
-	if (!curr) return;
-	if (curr->definitions.size() > 0) childs.emplace_back(currWord);
+	if (childs.size() == n||!curr) return;
+	if (curr->definitions.size() > 0) childs.push_back(currWord);
 	for (int i = 0; i < curr->childrens.size(); i++) {
 		
 		if (!curr->childrens[i]) continue;
@@ -172,10 +171,10 @@ int Trie::deleteWord(TrieNode*&curr,string word,TrieNode* parent,string firstWor
 	//1:delete node
 	//0:not delete node
 	//-1: no such words
-	if (curr == nullptr) {
+	if (!curr) {
 		return -1;
 	}
-	if (word.size()) {
+	if (word.size()>0) {
 		TrieNode* next = childNodeContainsChar(curr, word.substr(0, 1));
 		if (next == nullptr) {
 			return -1;
@@ -183,7 +182,6 @@ int Trie::deleteWord(TrieNode*&curr,string word,TrieNode* parent,string firstWor
 		else {
 			if (deleteWord(next, word.substr(1),curr,firstWord)==1 && curr->definitions.size() == 0 && curr->childrens.size() == 1) {
 				if (!parent) { return 1; } //Do not delete the root
-				
 				for (int i = 0; i < parent->childrens.size();i++) {
 					if (curr == parent->childrens[i]) {
 						parent->childrens[i]->childrens.clear();
