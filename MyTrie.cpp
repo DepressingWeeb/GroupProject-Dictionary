@@ -290,6 +290,18 @@ void Trie::insertDefinition(int nthDefinition, string word, string definition) {
 	//Insert to the nth definition of the word input (a word may or maynot has several definitions).
 	//If the nthDefinition is not in the range of the vector size or the word is not found,change nothing.
 	//When using this, note that the word must be already in the Trie.
+	TrieNode* curr = root;
+	string ch = "";
+	for (int i = 0; i < word.size(); i++) {
+		ch = word[i];
+		TrieNode* next = childNodeContainsChar(curr, ch);
+		if (next == nullptr) {
+			return;
+		}
+		curr = next;
+	}
+
+	curr->definitions.insert(curr->definitions.begin() + (nthDefinition - 1), definition);
 }
 
 void Trie::changeDefinition(int nthDefinition,string word,string definition) {
