@@ -70,14 +70,11 @@ void Trie::outputNodeFile(TrieNode* node, ofstream& out) {
 }
 
 void Trie::serialize(TrieNode* root, ofstream& out){
-	// Base case
 	if (root == nullptr) return;
-
 	// Else, store current node and recur for its children
 	outputNodeFile(root, out);
 	for (int i = 0; i < root->childrens.size(); i++)
 		serialize(root->childrens[i], out);
-
 	// Store marker at the end of children
 	out << MARKER_STRING << '\n';
 }
