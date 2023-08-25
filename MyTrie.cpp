@@ -110,7 +110,7 @@ void Trie::setOperationsDone(vector<vector<string>> newVector) {
 }
 
 TrieNode* Trie::getNodeWord(string word) {
-	TrieNode* curr = root;
+	TrieNode* cur = root;
 	string ch = "";
 	for (int i = 0; i < word.size(); i++) {
 		ch = word[i];
@@ -118,9 +118,9 @@ TrieNode* Trie::getNodeWord(string word) {
 		if (next == nullptr) {
 			return nullptr;
 		}
-		curr = next;
+		cur = next;
 	}
-	return curr;
+	return cur;
 }
 
 void Trie::getNChildUnderneath(TrieNode* curr, int n, vector<string>& childs,string currWord) {
