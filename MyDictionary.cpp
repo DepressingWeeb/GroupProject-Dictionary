@@ -118,7 +118,7 @@ vector<string> MyDictionary::getRandomWordAndDefinition() {
 }
 
 void MyDictionary::addFavorite(string word) {
-	
+	favoriteWords.emplace_back(word);
 }
 
 void MyDictionary::removeFavorite(string word) {
