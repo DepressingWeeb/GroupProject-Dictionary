@@ -1,4 +1,5 @@
 ﻿#pragma execution_character_set("utf-8")
+#define  _NO_CRT_STDIO_INLINE
 #include "DictionaryGUI.h"
 #include <stdio.h>
 #include <SDL.h>
@@ -12,6 +13,7 @@
 #include <iostream>
 #include <random>
 #include <chrono>
+#include <filesystem>
 #include "utils.h"
 using namespace std;
 using namespace std::chrono;
@@ -27,9 +29,26 @@ void initDictionary(MyDictionary& myDictionary,string PATH, atomic<bool>& done) 
 void searchDefinition(MyDictionary& myDictionary, vector<string>&wordSearched,string definitionSearch,atomic<bool>& doneSearch) {
     vector<pair<string, int>> ans = myDictionary.searchWords(definitionSearch, 10);
     wordSearched.clear();
-    for (auto p : ans) if(p.first!="")  wordSearched.push_back(p.first);
+    for (auto p : ans) if(p.first!="")  wordSearched.emplace_back(p.first);
     doneSearch = true;
 }
+
+void clearDictionary(MyDictionary& myDictionary, atomic<bool>& doneClear) {
+    myDictionary.freeDictionary();
+    doneClear = true;
+}
+
+void saveDictionary(MyDictionary& myDictionary, atomic<bool>& doneSave) {
+    myDictionary.toFile();
+    doneSave = true;
+}
+
+void loadDictionary(MyDictionary& myDictionary, string path, atomic<bool>& doneLoad) {
+    myDictionary.freeDictionary();
+    myDictionary = MyDictionary(path, 15);
+    doneLoad = true;
+}
+
 string getTime(Uint32 totalSeconds) {
     string minutes = to_string(totalSeconds / 60);
     string seconds = to_string(totalSeconds % 60);
@@ -68,12 +87,6 @@ vector<vector<string>> generateQuiz(int typeOne, int typeTwo, int diff,MyDiction
         int randomInt = rand() % 4;
         string def = v[randomInt][1];
         ans.push_back({ "2",def,v[0][0],v[1][0],v[2][0],v[3][0],to_string(randomInt)});
-    }
-    for (auto ve : ans) {
-        for (auto s : ve) {
-            cout << s << " ";
-        }
-        cout << endl;
     }
     return ans;
 }
@@ -138,6 +151,9 @@ int runGUI()
     iconBuilder.AddText(ICON_FA_LEFT_LONG);
     iconBuilder.AddText(ICON_FA_BOOK_OPEN_READER);
     iconBuilder.AddText(ICON_FA_GEAR);
+    iconBuilder.AddText(ICON_FA_FILE_EXPORT);
+    iconBuilder.AddText(ICON_FA_UPLOAD);
+    iconBuilder.AddText(ICON_FA_ERASER);
     iconBuilder.BuildRanges(&ranges_icon);
     //end icon font build
     ImFontConfig config,mergeConfig;
@@ -175,8 +191,14 @@ int runGUI()
     MyDictionary myDictionary;
     atomic<bool> done(true);
     atomic<bool> doneSearch(true);
+    atomic<bool> doneSave(true);
+    atomic<bool>doneLoad(true);
+    atomic<bool> doneClear(true);
     thread initDict;
     thread search;
+    thread save;
+    thread load;
+    thread clear;
     vector<string>  wordSearched;
     string wordToDisplayDefinition;
     vector<string> definitionsToDisplay;
@@ -193,6 +215,7 @@ int runGUI()
     vector<int>timesInSecond;
     vector<int>userAns;
     Uint64 startTime = time(0);
+    double timeMark = 0;
     while (!quit)
     {
         SDL_Event event;
@@ -219,14 +242,20 @@ int runGUI()
             ImGui::SameLine();
             if(selectedDict==-1)
                 ImGui::Text("Current dictionary size : %d",myDictionary.getSize());
-            else
+            else {
                 ImGui::Text("Loading %s %c", files[selectedDict], "|/-\\"[(int)(ImGui::GetTime() / 0.05f) & 3]);
+                ImGui::SameLine();
+                ImGui::SetCursorPosX(350);
+                ImGui::Text("%.2fs", ImGui::GetTime() - timeMark);
+            }
             if (ImGui::BeginPopup("Directory"))
             {
-                ImGui::SeparatorText("All file");
+                ImGui::SeparatorText("All files");
                 for (int i = 0; i < IM_ARRAYSIZE(files); i++)
-                    if (ImGui::Selectable(files[i]))
+                    if (ImGui::Selectable(files[i])) {
                         selectedDict = i;
+                        timeMark = ImGui::GetTime();
+                    }
                 
                 ImGui::EndPopup();
             }
@@ -250,13 +279,69 @@ int runGUI()
             if (ImGui::Button(ICON_FA_GEAR" Style Editor")) {
                 openStyleEditor = true;
             }
+            if (ImGui::Button(ICON_FA_ERASER" Clear Current Dictionary")) {
+
+                doneClear = false;
+                clear = thread(clearDictionary, ref(myDictionary), ref(doneClear));
+                timeMark = ImGui::GetTime();
+            }
+            if (!doneClear) {
+                ImGui::SameLine();
+                ImGui::Text("Clearing %c", "|/-\\"[(int)(ImGui::GetTime() / 0.05f) & 3]);
+                ImGui::SameLine();
+                ImGui::SetCursorPosX(300);
+                ImGui::Text("%.2fs", ImGui::GetTime() - timeMark);
+            }
+            else {
+                if (clear.joinable()) clear.join();
+            }
+            if (ImGui::Button(ICON_FA_FILE_EXPORT" Save Current Dictionary")) {
+                
+                doneSave = false;
+                save = thread(saveDictionary, ref(myDictionary), ref(doneSave));
+                timeMark = ImGui::GetTime();
+            }
+            if (!doneSave) { 
+                ImGui::SameLine();
+                ImGui::Text("Saving %c", "|/-\\"[(int)(ImGui::GetTime() / 0.05f) & 3]);
+                ImGui::SameLine();
+                ImGui::SetCursorPosX(300);
+                ImGui::Text("%.2fs", ImGui::GetTime() - timeMark);
+            }
+            else {
+                if (save.joinable()) save.join();
+            }
+            if (ImGui::Button(ICON_FA_UPLOAD" Load Previous Dictionary")) {
+                ImGui::OpenPopup("DS Directory");
+            }
+            if (ImGui::BeginPopup("DS Directory"))
+            {
+                ImGui::SeparatorText("All files");
+                for (const auto& entry : filesystem::directory_iterator("SavedDataStructure/")) {
+                    if (ImGui::Selectable(entry.path().string().c_str())) {
+                        doneLoad = false;
+                        load = thread(loadDictionary, ref(myDictionary), entry.path().string(), ref(doneLoad));
+                        timeMark = ImGui::GetTime();
+                    }
+                }
+                ImGui::EndPopup();
+            }
+            if (!doneLoad) {
+                ImGui::SameLine();
+                ImGui::Text("Loading %c", "|/-\\"[(int)(ImGui::GetTime() / 0.05f) & 3]);
+                ImGui::SameLine();
+                ImGui::SetCursorPosX(300);
+                ImGui::Text("%.2fs", ImGui::GetTime() - timeMark);
+            }
+            else {
+                if (load.joinable()) load.join();
+            }
             ImGui::InputTextWithHint("##Search word", "Type the word here",&word,ImGuiInputTextFlags_EnterReturnsTrue);
             
             ImGui::SameLine();
             if (ImGui::Button(ICON_FA_MAGNIFYING_GLASS" Search Word")) {
                 
                 wordSearched=myDictionary.getNWordsUnderneath(word, 50);
-                cout << word << endl;
                 if (wordSearched.size() > 0) {
                     wordToDisplayDefinition = wordSearched[0];
                     definitionsToDisplay = myDictionary.searchDefinition(wordSearched[0]);
@@ -296,7 +381,7 @@ int runGUI()
                 }
                 if (ImGui::BeginTabItem(ICON_FA_BOOK" Search History")) {
                     vector<string> searchHistory = myDictionary.getHistory();
-                    for (int i = 0; i < searchHistory.size(); i++) {
+                    for (int i = searchHistory.size()-1; i >=0; i--) {
                         if (ImGui::Selectable(searchHistory[i].c_str(), wordToDisplayDefinition == searchHistory[i])) {
                             definitionsToDisplay = myDictionary.searchDefinition(searchHistory[i]);
                             wordToDisplayDefinition = searchHistory[i];
@@ -389,7 +474,7 @@ int runGUI()
                 }
                 if (ImGui::Button(ICON_FA_PLUS" Add Definition")) {
                     myDictionary.insertWord(wordToDisplayDefinition, "");
-                    definitionsToDisplay.push_back("");
+                    definitionsToDisplay.emplace_back("");
                     isDefinitionEditing = definitionsToDisplay.size() - 1;
                 }
             }
@@ -414,7 +499,7 @@ int runGUI()
                 ImGui::InputTextMultiline(label.c_str(), &definitionsInsert[i],{ 300,50 },ImGuiInputTextFlags_EnterReturnsTrue);
             }
             if (ImGui::Button(ICON_FA_SQUARE_PLUS" Add Definition ")) {
-                definitionsInsert.push_back("");
+                definitionsInsert.emplace_back("");
             }
             if (ImGui::Button(ICON_FA_FLOPPY_DISK" Save to Dictionary")) {
                 for (int i = 0; i < definitionsInsert.size(); i++) {
@@ -473,7 +558,7 @@ int runGUI()
                 ImGui::TextWrapped(getTime(time(0) - startTime).c_str());
                 ImGui::PopFont();
                 ImGui::Text("");
-                string question = "Question "+to_string(currQuiz + 1) + " : " + "What is the " + (quizzes[currQuiz][0] == "1" ? "definition " : "word ") + "for the " + (quizzes[currQuiz][0] == "1" ? "word " : "definition \n") + quizzes[currQuiz][1];
+                string question = "Question "+to_string(currQuiz + 1) + " : " + "What is the " + (quizzes[currQuiz][0] == "1" ? "definition " : "word ") + "for the " + (quizzes[currQuiz][0] == "1" ? "word \"" : "definition \n\"") + quizzes[currQuiz][1]+"\"";
                 ImGui::TextWrapped(question.c_str());
                 for (int i = 1; i <= 4; i++) {
                     string ans = to_string(i) + " . " + quizzes[currQuiz][i + 1];
@@ -513,21 +598,25 @@ int runGUI()
                 ImGui::PopStyleVar();
                 ImGui::PopFont();
                 if (userAns[currQuiz] != -1) {
+                    ImGui::SetCursorPosX(325);
                     if (to_string(userAns[currQuiz]) == quizzes[currQuiz][6]) {
                         ImGui::TextColored({ 0,200,0,255 }, "CORRECT");
                     }
                     else {
                         ImGui::TextColored({ 200,0,0,255 }, "WRONG");
                     }
-                    if (ImGui::Button("Next")) {
-                        timesInSecond[currQuiz] = time(0) - startTime;
-                        startTime = time(0);
-                        currQuiz++;
-                    }
+                    ImGui::SetCursorPosX(310);
                     if (currQuiz > 0 && ImGui::Button("Prev")) {
                         timesInSecond[currQuiz] = time(0) - startTime;
                         startTime = time(0) - timesInSecond[currQuiz - 1];
                         currQuiz--;
+                        
+                    }
+                    if (currQuiz > 0)   ImGui::SameLine();
+                    if (ImGui::Button("Next")) {
+                        timesInSecond[currQuiz] = time(0) - startTime;
+                        startTime = time(0);
+                        currQuiz++;
                     }
                 }
             }
@@ -535,8 +624,8 @@ int runGUI()
                 ImDrawList* draw_list = ImGui::GetWindowDrawList();
                 ImVec2 wSize = ImGui::GetWindowSize();
                 ImVec2 wPos = ImGui::GetWindowPos();
-                ImU32 col_a = ImGui::GetColorU32(IM_COL32(129, 240, 223, 255));
-                ImU32 col_b = ImGui::GetColorU32(IM_COL32(104, 184, 204, 255));
+                ImU32 col_a = ImGui::GetColorU32(IM_COL32(239, 239, 187, 255));
+                ImU32 col_b = ImGui::GetColorU32(IM_COL32(212, 211, 221, 255));
                 draw_list->AddRectFilledMultiColor(wPos, {wSize[0]+wPos[0],wSize[1]+wPos[1]}, col_a, col_b, col_b, col_a);
                 if (timesInSecond[timesInSecond.size() - 1] == 0) {
                     int summ = 0;
@@ -587,7 +676,6 @@ int runGUI()
                     bonus="+";
                 else if (timesInSecond[timesInSecond.size() - 1] <= standardTime) {}
                 else bonus= "-";
-                //cout << bonus << endl;
                 ImGui::TextColored(color, rank.c_str());
                 ImGui::PopFont();
                 ImGui::SameLine();

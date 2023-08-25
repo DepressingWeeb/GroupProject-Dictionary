@@ -1,9 +1,11 @@
+#define MARKER_STRING "{}"
 #include "MyTrie.h"
 #include <iostream>
 #include <random>
 #include <chrono> //to use default_random_generator
 #include <sstream>
 #include <utility> //to use std::pair
+#include <fstream>
 #include "utils.h"
 
 TrieNode::TrieNode() {
@@ -14,18 +16,20 @@ TrieNode::TrieNode() {
 TrieNode::TrieNode(string character, string definition) {
 	this->character = character;
 	childWordCount = 0;
-	if(definition!="")	this->definitions.push_back(definition);
+	if(definition!="")	this->definitions.emplace_back(definition);
 }
 
 Trie::Trie() {
 	this->root = new TrieNode();
 }
-void Trie::freeTrie(TrieNode* root) {
-	for (TrieNode* child : root->childrens) {
+void Trie::freeTrie(TrieNode*& root) {
+	if (!root) return;
+	for (TrieNode*& child : root->childrens) {
 		freeTrie(child);
 	}
 	delete root;
 }
+
 TrieNode* Trie::childNodeContainsChar(TrieNode* parentNode,string character) {
 	if (!parentNode) return nullptr;
 	for (TrieNode* child : parentNode->childrens) {
@@ -34,10 +38,82 @@ TrieNode* Trie::childNodeContainsChar(TrieNode* parentNode,string character) {
 	return nullptr;
 }
 
+TrieNode* Trie::inputNodeFile(ifstream& in) {
+	string chara;
+	if (!(getline(in,chara))) {
+		return nullptr;
+	}
+	if (chara == MARKER_STRING) {
+		return nullptr;
+	}
+	TrieNode* newNode = new TrieNode();
+	newNode->character = chara;
+	string wordCount;
+	getline(in, wordCount);
+	newNode->childWordCount = stoi(wordCount);
+	string nDef;
+	getline(in, nDef);
+	int n_def = stoi(nDef);
+	newNode->definitions = vector<string>(n_def);
+	for (int i = 0; i < n_def; i++) {
+		getline(in, newNode->definitions[i]);
+		replace(newNode->definitions[i], '|', '\n');
+	}
+	return newNode;
+}
+
+void Trie::outputNodeFile(TrieNode* node, ofstream& out) {
+	out << node->character << '\n';
+	out << node->childWordCount << '\n';
+	out << node->definitions.size() << '\n';
+	for (int i = 0; i < node->definitions.size(); i++) {
+		string temp = node->definitions[i];
+		replace(temp, '\n', '|');
+		out << temp << '\n';
+	}
+}
+
+void Trie::serialize(TrieNode* root, ofstream& out){
+	// Base case
+	if (root == nullptr) return;
+
+	// Else, store current node and recur for its children
+	outputNodeFile(root, out);
+	for (int i = 0; i < root->childrens.size(); i++)
+		serialize(root->childrens[i], out);
+
+	// Store marker at the end of children
+	out << MARKER_STRING << '\n';
+}
+
+int Trie::deSerialize(TrieNode*& root, ifstream& in){
+	// Read next item from file. If there are no more items or next
+	// item is marker, then return 1 to indicate same
+	TrieNode* newNode = inputNodeFile(in);
+	if (!newNode) {
+		return 1;
+	}
+	// Else create node with this item and recur for children
+	root = newNode;
+	TrieNode* childNode;
+	while (true) {
+		childNode = nullptr;
+		if (deSerialize(childNode, in)) {
+			delete childNode;
+			break;
+		}
+		root->childrens.emplace_back(childNode);
+	}
+	// Finally return 0 for successful finish
+	return 0;
+}
+
 vector<vector<string>> Trie::getOperationsDone() {
-	vector<vector<string>> ans = operationsDone;
-	operationsDone.clear();
-	return ans;
+	return operationsDone;
+}
+
+void Trie::setOperationsDone(vector<vector<string>> newVector) {
+	operationsDone = newVector;
 }
 
 TrieNode* Trie::getNodeWord(string word) {
@@ -58,11 +134,10 @@ void Trie::getNChildUnderneath(TrieNode* curr, int n, vector<string>& childs,str
 	
 	if (childs.size() == n) return;
 	if (!curr) return;
-	if (curr->definitions.size() > 0) childs.push_back(currWord);
+	if (curr->definitions.size() > 0) childs.emplace_back(currWord);
 	for (int i = 0; i < curr->childrens.size(); i++) {
 		
 		if (!curr->childrens[i]) continue;
-		cout << currWord << " " << currWord + curr->childrens[i]->character << endl;
 		getNChildUnderneath(curr->childrens[i], n, childs, currWord + curr->childrens[i]->character);
 	}
 }
@@ -79,15 +154,15 @@ bool Trie::insertWord(string word, string definition) {
 		TrieNode* next = childNodeContainsChar(curr, ch);
 		if (next == nullptr) {
 			next = new TrieNode(ch, "");
-			curr->childrens.push_back(next);
+			curr->childrens.emplace_back(next);
 			ans = false;
 		}
-		v.push_back(curr);
+		v.emplace_back(curr);
 		curr = next;
 	}
 	if (curr->definitions.size() == 0) ans = false;
-	curr->definitions.push_back(definition);
-	v.push_back(curr);
+	curr->definitions.emplace_back(definition);
+	v.emplace_back(curr);
 	if (!ans) {
 		for (TrieNode* node : v) node->childWordCount++;
 		operationsDone.push_back({ "insert_word",word });
@@ -98,7 +173,7 @@ bool Trie::insertWord(string word, string definition) {
 	return ans;
 }
 
-int Trie::deleteWord(TrieNode*&curr,string word,TrieNode* parent) {
+int Trie::deleteWord(TrieNode*&curr,string word,TrieNode* parent,string firstWord) {
 	//Function desciption:
 	//Delete the word and all of its definition in the trie 
 	//1:true
@@ -113,13 +188,16 @@ int Trie::deleteWord(TrieNode*&curr,string word,TrieNode* parent) {
 			return -1;
 		}
 		else {
-			if (deleteWord(next, word.substr(1),curr)==1 && curr->definitions.size() == 0 && curr->childrens.size() == 1) {
-				if (!parent) return 1; //Do not delete the root
-				for (TrieNode*& t : parent->childrens) {
-					if (curr == t) {
-						t->childrens.clear();
-						delete t;
-						t = nullptr;
+			if (deleteWord(next, word.substr(1),curr,firstWord)==1 && curr->definitions.size() == 0 && curr->childrens.size() == 1) {
+				if (!parent) { return 1; } //Do not delete the root
+				
+				for (int i = 0; i < parent->childrens.size();i++) {
+					if (curr == parent->childrens[i]) {
+						parent->childrens[i]->childrens.clear();
+						delete parent->childrens[i];
+						parent->childrens[i] = nullptr;
+						parent->childrens.erase(parent->childrens.begin() + i);
+						break;
 					}
 				}
 				return 1;
@@ -132,13 +210,16 @@ int Trie::deleteWord(TrieNode*&curr,string word,TrieNode* parent) {
 	}
 	else if(word.size()==0 && curr->definitions.size()>0) {
 		for (int i = curr->definitions.size()-1; i >=0; i--) {
-			operationsDone.push_back({ "delete_def",word,curr->definitions[i],to_string(i+1)});
+			operationsDone.push_back({ "delete_def",firstWord,curr->definitions[i],to_string(i+1)});
 		}
 		if (curr->childrens.size() == 0) {
-			for (TrieNode*& t : parent->childrens) {
-				if (curr == t) {
-					delete t;
-					t = nullptr;
+			for (int i = 0; i < parent->childrens.size(); i++) {
+				if (curr == parent->childrens[i]) {
+					parent->childrens[i]->childrens.clear();
+					delete parent->childrens[i];
+					parent->childrens[i] = nullptr;
+					parent->childrens.erase(parent->childrens.begin() + i);
+					break;
 				}
 			}
 			return 1;
@@ -164,14 +245,14 @@ void Trie::getWords(TrieNode* curr,string currWord, int nWord,vector<pair<string
 				if (def.find(w)!=string::npos) match++;
 			}
 			if (ans.size() < nWord) {
-				ans.push_back(make_pair(currWord, match));
+				ans.emplace_back(make_pair(currWord, match));
 				if (ans.size() == nWord) sortByFunc(ans);
 				break;
 			}
 			else {
 				if (match > ans[ans.size() - 1].second) {
 					ans.pop_back();
-					ans.push_back(make_pair(currWord, match));
+					ans.emplace_back(make_pair(currWord, match));
 					sortByFunc(ans);
 					break;
 				}
@@ -190,7 +271,6 @@ void Trie::getWords(TrieNode* curr,string currWord, int nWord,vector<pair<string
 vector<string> Trie::getDefinitions(string word) {
 	// Function description:
 	//Return the vector<string> which is all of the definitions of the word
-	//cout << root->definitions[0];
 	TrieNode* curr = root;
 	vector<string> error = {"No word found"};
 	string ch = "";
@@ -274,8 +354,8 @@ vector<string> Trie::getRandomWordAndDefinition() {
 	vector<string> ans;
 	TrieNode* curr = root;
 	if (!curr) {
-		ans.push_back("None");
-		ans.push_back("None");
+		ans.emplace_back("None");
+		ans.emplace_back("None");
 		return ans;
 	}
 	default_random_engine generator(std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -283,7 +363,6 @@ vector<string> Trie::getRandomWordAndDefinition() {
 		.count());
 	uniform_int_distribution<int> distribution(1, root->childWordCount);
 	int random = distribution(generator);
-	//cout << random << endl;
 	bool flag = false;
 	TrieNode* next = nullptr;
 	string word = "";
@@ -291,9 +370,9 @@ vector<string> Trie::getRandomWordAndDefinition() {
 		for (TrieNode* node : curr->childrens) {
 			if (random == 1 && node->definitions.size() != 0) {
 				flag = true;
-				ans.push_back(word + node->character);
+				ans.emplace_back(word + node->character);
 				uniform_int_distribution<int> defRandom(0, node->definitions.size()-1);
-				ans.push_back(node->definitions[defRandom(generator)]);
+				ans.emplace_back(node->definitions[defRandom(generator)]);
 				break;
 			}
 			else if (random <= (node->childWordCount)) {

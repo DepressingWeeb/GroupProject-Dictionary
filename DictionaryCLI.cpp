@@ -42,6 +42,7 @@ void runCLI() {
 		case 1:
 			cout << "Type the path to the dataset:";
 			cin >> input2;
+			myDictionary.freeDictionary();
 			myDictionary = MyDictionary(input2, 1);
 			break;
 		case 2:
@@ -156,15 +157,20 @@ void runCLI() {
 			myDictionary.printFavorite();
 			break;
 		case 15:
-			//TODO
+			cout << "Type the path to the serialized file: ";
+			inputString(input2);
+			myDictionary.freeDictionary();
+			myDictionary = MyDictionary(input2, 15);
+			break;
 		case 16:
-			//TODO
+			myDictionary.toFile();
+			break;
 		case 17:
 			return;
 		default:
 			break;
 		}
-		cout << "Press any key to continue..." << endl;
+		cout << "Done. Press any key to continue..." << endl;
 		_getch();
 		system("cls");
 	}
