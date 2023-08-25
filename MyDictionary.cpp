@@ -121,6 +121,10 @@ void MyDictionary::addFavorite(string word) {
 	favoriteWords.emplace_back(word);
 }
 
+void MyDictionary::removeFavorite(string word) {
+	int idxFound = find(favoriteWords, word);
+	if (idxFound != -1) favoriteWords.erase(favoriteWords.begin() + idxFound);
+}
 
 void MyDictionary::printFavorite() {
 	for (int i = 1; i <= favoriteWords.size(); i++)
