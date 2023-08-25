@@ -20,7 +20,6 @@ private:
 	TrieNode* childNodeContainsChar(TrieNode* parentNode,string character);
 public:
 	Trie();//default constructor
-	//~Trie();//Destructor
 	void freeTrie(TrieNode*& root);
 	TrieNode*& getRoot() { return root; }
 	void setRoot(TrieNode* newRoot) { root = newRoot; }

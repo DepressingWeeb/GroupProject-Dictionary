@@ -142,7 +142,7 @@ vector<string> MyDictionary::getFavorite() {
 
 void MyDictionary::printHistory() {
 	for(int i=searchHistory.size()-1;i>-1;i--)
-		cout << to_string(i) << "." << searchHistory[i] << endl;
+		cout << to_string(i) << "." << searchHistory[i] << '\n';
 }
 
 vector<string> MyDictionary::getHistory() {
@@ -153,7 +153,6 @@ void MyDictionary::toFile() {
 	//Function description:
 	//Save the current Dictionary to file (must ensure that each time the saved file has unique name )
 	//Recommend: using time since epoch (time(0)) or date and time format to make a different name for each file
-
 	//Create file name
 	struct tm timeT;
 	auto now = std::chrono::system_clock::now();
@@ -163,21 +162,17 @@ void MyDictionary::toFile() {
 	stringstream ss;
 	ss << put_time(&timeT, "%Y-%m-%d %H.%M.%S") << ".txt";
 	string fileName = ss.str();
-
 	//Serialize Trie
 	ofstream out("SavedDataStructure/"+fileName);
 	trie.serialize(trie.getRoot(), out);
-
 	//Serialize favoriteWord
 	out << favoriteWords.size() << '\n';
 	for (string w : favoriteWords)
 		out << w << "\n";
-
 	//serialize searchHistory
 	out << searchHistory.size() << '\n';
 	for (string w : searchHistory)
 		out << w << "\n";
-
 	//serialize operationsDone
 	vector<vector<string>>operations = trie.getOperationsDone();
 	out << operations.size() << '\n';
