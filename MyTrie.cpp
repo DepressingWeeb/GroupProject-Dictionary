@@ -263,9 +263,6 @@ void Trie::getWords(TrieNode* curr,string currWord, int nWord,vector<pair<string
 	for (TrieNode* node : curr->childrens) {
 		getWords(node,currWord,nWord,ans,definition);
 	}
-	
-
-
 }
 
 vector<string> Trie::getDefinitions(string word) {
@@ -326,9 +323,6 @@ void Trie::changeDefinition(int nthDefinition,string word,string definition) {
 }
 
 void Trie::deleteDefinition(int nthDefinition, string word) {
-	// Function description:
-	//Delete the nth definition of the word input (a word may or maynot has several definitions).
-	//If the nthDefinition is not in the range of the vector size or the word is not found,change nothing.
 	TrieNode* curr = root;
 	string ch = "";
 	for (int i = 0; i < word.size(); i++) {
@@ -346,17 +340,12 @@ void Trie::deleteDefinition(int nthDefinition, string word) {
 }
 
 vector<string> Trie::getRandomWordAndDefinition() {
-	// Function description:
-	// Return a random word and one of its definition
-	//Return vector with the following format:
-	//v[0]: the random word
-	//v[1]: a random definition of that word
-	vector<string> ans;
+	vector<string> res;
 	TrieNode* curr = root;
 	if (!curr) {
-		ans.emplace_back("None");
-		ans.emplace_back("None");
-		return ans;
+		res.emplace_back("None");
+		res.emplace_back("None");
+		return res;
 	}
 	default_random_engine generator(std::chrono::duration_cast<std::chrono::nanoseconds>(
 		std::chrono::high_resolution_clock::now().time_since_epoch())
@@ -370,9 +359,9 @@ vector<string> Trie::getRandomWordAndDefinition() {
 		for (TrieNode* node : curr->childrens) {
 			if (random == 1 && node->definitions.size() != 0) {
 				flag = true;
-				ans.emplace_back(word + node->character);
+				res.emplace_back(word + node->character);
 				uniform_int_distribution<int> defRandom(0, node->definitions.size()-1);
-				ans.emplace_back(node->definitions[defRandom(generator)]);
+				res.emplace_back(node->definitions[defRandom(generator)]);
 				break;
 			}
 			else if (random <= (node->childWordCount)) {
@@ -388,5 +377,5 @@ vector<string> Trie::getRandomWordAndDefinition() {
 		if (flag) break;
 		curr = next;
 	}
-	return ans;
+	return res;
 }
