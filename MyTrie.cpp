@@ -173,64 +173,7 @@ bool Trie::insertWord(string word, string definition) {
 	return ans;
 }
 
-int Trie::deleteWord(TrieNode*&curr,string word,TrieNode* parent,string firstWord) {
-	//Function desciption:
-	//Delete the word and all of its definition in the trie 
-	//1:true
-	//0:false
-	//-1: no such words
-	if (curr == nullptr) {
-		return -1;
-	}
-	if (word.size()) {
-		TrieNode* next = childNodeContainsChar(curr, word.substr(0, 1));
-		if (next == nullptr) {
-			return -1;
-		}
-		else {
-			if (deleteWord(next, word.substr(1),curr,firstWord)==1 && curr->definitions.size() == 0 && curr->childrens.size() == 1) {
-				if (!parent) { return 1; } //Do not delete the root
-				
-				for (int i = 0; i < parent->childrens.size();i++) {
-					if (curr == parent->childrens[i]) {
-						parent->childrens[i]->childrens.clear();
-						delete parent->childrens[i];
-						parent->childrens[i] = nullptr;
-						parent->childrens.erase(parent->childrens.begin() + i);
-						break;
-					}
-				}
-				return 1;
-			}
-			else {
-				curr->childWordCount--;
-				return 0;
-			}
-		}
-	}
-	else if(word.size()==0 && curr->definitions.size()>0) {
-		for (int i = curr->definitions.size()-1; i >=0; i--) {
-			operationsDone.push_back({ "delete_def",firstWord,curr->definitions[i],to_string(i+1)});
-		}
-		if (curr->childrens.size() == 0) {
-			for (int i = 0; i < parent->childrens.size(); i++) {
-				if (curr == parent->childrens[i]) {
-					parent->childrens[i]->childrens.clear();
-					delete parent->childrens[i];
-					parent->childrens[i] = nullptr;
-					parent->childrens.erase(parent->childrens.begin() + i);
-					break;
-				}
-			}
-			return 1;
-		}
-		else {
-			curr->definitions.clear();
-			return 0;
-		}
-	}
-	return -1;
-}
+//
 
 void Trie::getWords(TrieNode* curr,string currWord, int nWord,vector<pair<string,int>>& ans,vector<string>& definition) {
 	//TODO:Implement sort() function in utils.cpp and utils.h because the project doesn't allow sort in std library 
