@@ -318,11 +318,7 @@ void Trie::changeDefinition(int nthDefinition,string word,string definition) {
 		}
 		curr = next;
 	}
-	if (nthDefinition >= 1 && nthDefinition <= curr->definitions.size()) {
-		string prevDefinition = curr->definitions[nthDefinition - 1];
-		curr->definitions[nthDefinition - 1] = definition;
-		operationsDone.push_back({ "change_def",word,prevDefinition,definition,to_string(nthDefinition) });
-	}
+
 }
 
 void Trie::deleteDefinition(int nthDefinition, string word) {
