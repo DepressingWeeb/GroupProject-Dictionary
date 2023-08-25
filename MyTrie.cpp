@@ -141,37 +141,7 @@ void Trie::getNChildUnderneath(TrieNode* curr, int n, vector<string>& childs,str
 		getNChildUnderneath(curr->childrens[i], n, childs, currWord + curr->childrens[i]->character);
 	}
 }
-bool Trie::insertWord(string word, string definition) {
-	//Function desciption:
-	//Insert a word into trie
-	//Return true if word already presented in trie,else false
-	bool ans = true;
-	TrieNode* curr = root;
-	string ch = "";
-	vector<TrieNode*> v;
-	for (int i = 0; i < word.size(); i++) {
-		ch = word[i];
-		TrieNode* next = childNodeContainsChar(curr, ch);
-		if (next == nullptr) {
-			next = new TrieNode(ch, "");
-			curr->childrens.emplace_back(next);
-			ans = false;
-		}
-		v.emplace_back(curr);
-		curr = next;
-	}
-	if (curr->definitions.size() == 0) ans = false;
-	curr->definitions.emplace_back(definition);
-	v.emplace_back(curr);
-	if (!ans) {
-		for (TrieNode* node : v) node->childWordCount++;
-		operationsDone.push_back({ "insert_word",word });
-	}
-	else {
-		operationsDone.push_back({ "insert_def",word,definition,to_string(curr->definitions.size())});
-	}
-	return ans;
-}
+//
 
 int Trie::deleteWord(TrieNode*&curr,string word,TrieNode* parent,string firstWord) {
 	//Function desciption:
