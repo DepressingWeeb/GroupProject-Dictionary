@@ -57,32 +57,32 @@ string getTime(Uint32 totalSeconds) {
     return minutes + ":" + seconds;
 }
 vector<string> getRandomWordAndDefinitionWithDiff(int diff, MyDictionary& myDictionary) {
-    int minn = 2 + (diff - 1) * 3;
-    int maxx = 2 + diff * 3;
+    int minsize = 2 + (diff - 1) * 3;
+    int maxsize = 2 + diff * 3;
     while (true) {
         vector<string> wordWithDef = myDictionary.getRandomWordAndDefinition();
-        if (wordWithDef[0].size() >= minn && wordWithDef[0].size() <= maxx) return wordWithDef;
+        if (wordWithDef[0].size() >= minsize && wordWithDef[0].size() <= maxsize) return wordWithDef;
     }
 }
 vector<vector<string>> generateQuiz(int typeOne, int typeTwo, int diff,MyDictionary& myDictionary) {
     vector<vector<string>> ans;
     for (int i = 0; i < typeOne; i++) {
-        vector<string>rep = getRandomWordAndDefinitionWithDiff(diff,myDictionary);
-        vector<string>rep2 = getRandomWordAndDefinitionWithDiff(diff, myDictionary);
-        vector<string>rep3 = getRandomWordAndDefinitionWithDiff(diff, myDictionary);
-        vector<string>rep4 = getRandomWordAndDefinitionWithDiff(diff, myDictionary);
-        vector<vector<string>>v = { rep,rep2,rep3,rep4 };
+        vector<string>choice1 = getRandomWordAndDefinitionWithDiff(diff,myDictionary);
+        vector<string>choice2 = getRandomWordAndDefinitionWithDiff(diff, myDictionary);
+        vector<string>choice3 = getRandomWordAndDefinitionWithDiff(diff, myDictionary);
+        vector<string>choice4 = getRandomWordAndDefinitionWithDiff(diff, myDictionary);
+        vector<vector<string>>v = { choice1,choice2,choice3,choice4 };
         shuffle(v.begin(), v.end(), default_random_engine(time(0)));
         int randomInt = rand() % 4;
         string word = v[randomInt][0];
         ans.push_back({ "1",word,v[0][1],v[1][1],v[2][1],v[3][1],to_string(randomInt)});
     }
     for (int i = 0; i < typeTwo; i++) {
-        vector<string>rep = getRandomWordAndDefinitionWithDiff(diff, myDictionary);
-        vector<string>rep2 = getRandomWordAndDefinitionWithDiff(diff, myDictionary);
-        vector<string>rep3 = getRandomWordAndDefinitionWithDiff(diff, myDictionary);
-        vector<string>rep4 = getRandomWordAndDefinitionWithDiff(diff, myDictionary);
-        vector<vector<string>>v = { rep,rep2,rep3,rep4 };
+        vector<string>choice1 = getRandomWordAndDefinitionWithDiff(diff, myDictionary);
+        vector<string>choice2 = getRandomWordAndDefinitionWithDiff(diff, myDictionary);
+        vector<string>choice3 = getRandomWordAndDefinitionWithDiff(diff, myDictionary);
+        vector<string>choice4 = getRandomWordAndDefinitionWithDiff(diff, myDictionary);
+        vector<vector<string>>v = { choice1,choice2,choice3,choice4 };
         shuffle(v.begin(), v.end(), default_random_engine(time(0)));
         int randomInt = rand() % 4;
         string def = v[randomInt][1];
