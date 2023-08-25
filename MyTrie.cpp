@@ -1,4 +1,3 @@
-#define MARKER_STRING "{}"
 #include "MyTrie.h"
 #include <iostream>
 #include <random>
@@ -7,6 +6,7 @@
 #include <utility> //to use std::pair
 #include <fstream>
 #include "utils.h"
+#define MARKER_STRING "{}"
 
 TrieNode::TrieNode() {
 	character = "";
@@ -40,12 +40,8 @@ TrieNode* Trie::childNodeContainsChar(TrieNode* parentNode,string character) {
 
 TrieNode* Trie::inputNodeFile(ifstream& in) {
 	string chara;
-	if (!(getline(in,chara))) {
-		return nullptr;
-	}
-	if (chara == MARKER_STRING) {
-		return nullptr;
-	}
+	if (!(getline(in, chara))) return nullptr;
+	if (chara == MARKER_STRING) return nullptr;
 	TrieNode* newNode = new TrieNode();
 	newNode->character = chara;
 	string wordCount;
@@ -176,8 +172,8 @@ bool Trie::insertWord(string word, string definition) {
 int Trie::deleteWord(TrieNode*&curr,string word,TrieNode* parent,string firstWord) {
 	//Function desciption:
 	//Delete the word and all of its definition in the trie 
-	//1:true
-	//0:false
+	//1:delete node
+	//0:not delete node
 	//-1: no such words
 	if (curr == nullptr) {
 		return -1;
