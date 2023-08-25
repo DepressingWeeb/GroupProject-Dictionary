@@ -30,8 +30,8 @@ MyDictionary::MyDictionary(const string path,int option) {
 		trie.setOperationsDone(vector<vector<string>>());
 	}
 	else{
-		int fail=trie.deSerialize(trie.getRoot(), fin);
-		if (fail) {
+		int isfail=trie.deSerialize(trie.getRoot(), fin);
+		if (isfail) {
 			fin.close();
 			return;
 		}
